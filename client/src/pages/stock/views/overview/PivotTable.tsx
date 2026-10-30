@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
 
-import type { StockMeta } from '@shared/api.interface';
+import type { OverviewMeta } from '@shared/api.interface';
 
 import { num } from '../../lib/format';
 import type { MonthAxis, PivotCell, PivotStore } from '../../lib/model';
@@ -20,9 +20,10 @@ interface FlatRow {
 
 interface PivotTableProps {
   stores: PivotStore[];
-  meta: StockMeta;
+  meta: OverviewMeta;
   axis: MonthAxis;
   span: number;
+  available?: boolean;
   wh: number;
   cat: number;
   cust: number;
@@ -58,7 +59,7 @@ const cellKeys = (pick: () => void) => (event: KeyboardEvent<HTMLTableCellElemen
   }
 };
 
-const PivotTable = ({ stores, meta, axis, span, wh, cat, cust, onWh, onCat, onCust }: PivotTableProps) => {
+const PivotTable = ({ stores, meta, axis, span, available = true, wh, cat, cust, onWh, onCat, onCust }: PivotTableProps) => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [gotoPage, setGotoPage] = useState('');
@@ -122,15 +123,15 @@ const PivotTable = ({ stores, meta, axis, span, wh, cat, cust, onWh, onCat, onCu
     flat.reduce(
       (acc, row: FlatRow) => {
         const cell = at(row.cells, j);
-        acc.qty += cell.qty;
-        acc.usd += cell.usd;
+        acc.qty = acc.qty == null || cell.qty == null ? null : acc.qty + cell.qty;
+        acc.usd = acc.usd == null || cell.usd == null ? null : acc.usd + cell.usd;
         return acc;
       },
       { qty: 0, usd: 0 },
     ),
   );
-  const grandQty = flat.reduce((sum: number, row: FlatRow) => sum + row.qty, 0);
-  const grandUsd = flat.reduce((sum: number, row: FlatRow) => sum + row.usd, 0);
+  const grandQty = flat.reduce((sum: number, row: FlatRow) => sum == null || row.qty == null ? null : sum + row.qty, 0);
+  const grandUsd = flat.reduce((sum: number, row: FlatRow) => sum == null || row.usd == null ? null : sum + row.usd, 0);
 
   useEffect(() => {
     setPage(0);
@@ -184,6 +185,7 @@ const PivotTable = ({ stores, meta, axis, span, wh, cat, cust, onWh, onCat, onCu
             </tr>
           </thead>
           <tbody>
+            {!available ? <tr><td colSpan={3}>—</td><td className="cell">—</td><td className="cell usd">—</td></tr> : null}
             {slice.map((row: FlatRow, index: number) => {
               const whLabel = storeLabel(meta.warehouses[row.wh]);
               return (
@@ -249,8 +251,8 @@ const PivotTable = ({ stores, meta, axis, span, wh, cat, cust, onWh, onCat, onCu
                   <td className="cell usd">{num(total.usd)}</td>
                 </Fragment>
               ))}
-              <td className="cell">{num(grandQty)}</td>
-              <td className="cell usd">{num(grandUsd)}</td>
+              <td className="cell">{num(available ? grandQty : null)}</td>
+              <td className="cell usd">{num(available ? grandUsd : null)}</td>
             </tr>
           </tbody>
         </table>
@@ -258,7 +260,7 @@ const PivotTable = ({ stores, meta, axis, span, wh, cat, cust, onWh, onCat, onCu
 
       <div className="sheet-foot">
         <span className="foot-total">
-          Total: <b>{num(flat.length)}</b>
+          Total: <b>{num(available ? flat.length : null)}</b>
         </span>
         <div className="foot-right">
           <div className="pager-btns">

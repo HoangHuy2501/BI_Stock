@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import type { ReserveSummary, StockMeta, StockWipSummary } from '@shared/api.interface';
+import type { ReserveSummary, OverviewMeta, StockWipSummary } from '@shared/api.interface';
 
 import Icon from '../../components/Icon';
 import { num, pct, usd } from '../../lib/format';
@@ -13,11 +13,11 @@ const ROWS_PER_PAGE = 3;
 
 interface StoreKpisProps {
   rows: AgedBucket[];
-  meta: StockMeta;
+  meta: OverviewMeta;
   whSel: number;
   onWh: (value: number) => void;
-  wip: StockWipSummary;
-  reserve: ReserveSummary;
+  wip: StockWipSummary | null;
+  reserve: ReserveSummary | null;
 }
 
 interface TileFlag {
@@ -65,9 +65,9 @@ const StoreKpis = ({ rows, meta, whSel, onWh, wip, reserve }: StoreKpisProps) =>
   const safePage = Math.min(page, pageCount - 1);
   const viewportHeight = step ? step * ROWS_PER_PAGE - 2 : 0;
 
-  const redUsd = wip.lights[3]?.usd ?? 0;
-  const warmUsd = (wip.lights[1]?.usd ?? 0) + (wip.lights[2]?.usd ?? 0) + redUsd;
-  const reserveBand = RESERVE_BANDS[reserve.oldestBandIndex] ?? RESERVE_BANDS[0];
+  const redUsd = wip?.lights[3]?.usd ?? 0;
+  const warmUsd = (wip?.lights[1]?.usd ?? 0) + (wip?.lights[2]?.usd ?? 0) + redUsd;
+  const reserveBand = RESERVE_BANDS[reserve?.oldestBandIndex] ?? RESERVE_BANDS[0];
 
   return (
     <div className="kpi-pager">
@@ -80,13 +80,15 @@ const StoreKpis = ({ rows, meta, whSel, onWh, wip, reserve }: StoreKpisProps) =>
           ref={gridRef}
           style={{ transform: `translateY(${-safePage * ROWS_PER_PAGE * step}px)` }}
         >
+          {rows.length === 0 ? <span className="kpi-val">—</span> : null}
           {rows.map((row: AgedBucket) => {
             const warehouse = meta.warehouses[row.idx];
             if (!warehouse) return null;
             const style = storeStyle(row.idx, warehouse);
             const name = storeLabel(warehouse);
-            const isWip = row.idx === wip.storeIdx;
-            const isReserve = row.idx === reserve.warehouseIdx;
+            const isWip = row.idx === wip?.storeIdx;
+            const isReserve = row.idx === reserve?.warehouseIdx;
+            const missingAge = wip == null && reserve == null;
             const tracksAge = isWip || isReserve;
             const share = isWip ? (wip.usd ? redUsd / wip.usd : 0) : row.usd ? row.aged / row.usd : 0;
 
@@ -151,7 +153,9 @@ const StoreKpis = ({ rows, meta, whSel, onWh, wip, reserve }: StoreKpisProps) =>
                   </span>
                   <span className="kpi-unit">USD</span>
                   <span className="kpi-val">{num(row.usd)}</span>
-                  {tracksAge ? (
+                  {missingAge ? (
+                    <span className="kpi-flag kpi-flag-blank">—</span>
+                  ) : tracksAge ? (
                     <button
                       type="button"
                       className={`kpi-flag kpi-flag-link ${flag.cls}`}

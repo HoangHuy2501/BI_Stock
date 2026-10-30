@@ -4,8 +4,8 @@ import { num } from '../../lib/format';
 interface DetailToolsProps {
   search: string;
   onSearch: (value: string) => void;
-  shown: number;
-  total: number;
+  shown: number | null;
+  total: number | null;
 }
 
 const DetailTools = ({ search, onSearch, shown, total }: DetailToolsProps) => (

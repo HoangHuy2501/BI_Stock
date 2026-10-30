@@ -8,7 +8,8 @@ import type {
   StockCacheKey,
   StockCacheRefreshResponse,
   StockDetailResponse,
-  StockOverviewResponse,
+  StockOverviewData,
+  StockOverviewApiResponse,
   StockSourceStatusResponse,
   WipDatasetResponse,
   WipTag,
@@ -96,7 +97,16 @@ export const getStockErrorMessage = (error: unknown, fallback: string): string =
 };
 
 export const stockApi = {
-  overview: (): Promise<StockOverviewResponse> => requestGet<StockOverviewResponse>('/api/stock/overview'),
+  overview: async (): Promise<StockOverviewData> => {
+    const response = await requestGet<StockOverviewData | StockOverviewApiResponse>('/api/stock/overview');
+    if ('success' in response) {
+      if (!response.success || !response.data) {
+        throw new Error(response.message || 'Could not load overview');
+      }
+      return response.data;
+    }
+    return response;
+  },
 
   detail: (query: StockDetailQuery): Promise<StockDetailResponse> =>
     requestGet<StockDetailResponse>('/api/stock/detail', { ...query }),

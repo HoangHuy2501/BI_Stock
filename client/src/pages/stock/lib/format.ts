@@ -1,6 +1,6 @@
-export const usd = (value: number): string => `$${Math.round(value).toLocaleString('en-US')}`;
+export const usd = (value: number | null): string => value == null ? '—' : `$${Math.round(value).toLocaleString('en-US')}`;
 
-export const num = (value: number): string => Math.round(value).toLocaleString('en-US');
+export const num = (value: number | null): string => value == null ? '—' : Math.round(value).toLocaleString('en-US');
 
 export const usdCompact = (value: number): string => {
   const abs = Math.abs(value);
@@ -9,7 +9,8 @@ export const usdCompact = (value: number): string => {
   return `$${Math.round(value)}`;
 };
 
-export const pct = (value: number, total: number): string => {
+export const pct = (value: number | null, total: number | null): string => {
+  if (value == null || total == null) return '—';
   if (!total) return '0.0%';
   return `${((value / total) * 100).toFixed(1)}%`;
 };

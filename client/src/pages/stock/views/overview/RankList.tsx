@@ -4,7 +4,7 @@ export interface RankRow {
   key: number;
   label: string;
   en?: string | null;
-  value: number;
+  value: number | null;
 }
 
 interface RankListProps {
@@ -17,10 +17,11 @@ interface RankListProps {
 const BADGES = ['top1', 'top2', 'top3'];
 
 const RankList = ({ rows, picked, onPick, alt }: RankListProps) => {
-  const max = rows.reduce((current: number, row: RankRow) => Math.max(current, row.value), 1);
+  const max = rows.reduce((current: number, row: RankRow) => Math.max(current, row.value ?? 0), 1);
 
   return (
     <div className="rank-list">
+      {rows.length === 0 ? <span className="rank-val">—</span> : null}
       {rows.map((row: RankRow, index: number) => {
         const on = picked === row.key;
         const badge = BADGES[index] ?? '';
@@ -44,7 +45,7 @@ const RankList = ({ rows, picked, onPick, alt }: RankListProps) => {
               <span className="rank-track">
                 <span
                   className={`rank-fill${alt ? ' alt' : ''}`}
-                  style={{ width: `${Math.max((row.value / max) * 100, 1)}%` }}
+                  style={{ width: `${row.value == null ? 0 : Math.max((row.value / max) * 100, 1)}%` }}
                 ></span>
               </span>
             </span>
