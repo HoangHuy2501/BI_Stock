@@ -121,6 +121,7 @@ const ReserveRegister = ({
               <th className="nowrap">Date</th>
               <th>Buyer 客户</th>
               <th style={{ width: '22%' }}>Reason_dl 原因</th>
+              <th>Link</th>
               <th>Warehouse band 库龄段</th>
               <th className="num">Age (mo) 月龄</th>
               <th className="num">Value</th>
@@ -130,6 +131,7 @@ const ReserveRegister = ({
             {slice.map((line: StockDetailLine) => {
               const months = monthsOfDays(line.ageDays);
               const band = bandOf(months);
+              const goodsLink = `http://172.18.1.12:4004/?goods_no=${encodeURIComponent(line.goodsNo)}`;
               return (
                 <tr className="row" key={line.id}>
                   <td>
@@ -146,6 +148,15 @@ const ReserveRegister = ({
                   <td className="nowrap">{line.customerName}</td>
                   <td className="reason-cell">
                     {line.reasonDl || <span className="not-recorded">Not recorded</span>}
+                  </td>
+                  <td className="reason-cell">
+                    {line.reasonDl !== null ? (
+                      '—'
+                    ) : (
+                      <a href={goodsLink} target="_blank" rel="noopener noreferrer">
+                        {goodsLink}
+                      </a>
+                    )}
                   </td>
                   <td>
                     <span className="band-pill" style={{ color: band.ink, background: band.tint }}>
@@ -175,6 +186,7 @@ const ReserveRegister = ({
                 <td className="reason-cell">
                   <span className="faint">not in detail feed</span>
                 </td>
+                <td>—</td>
                 <td>
                   <span className="band-pill" style={{ color: 'var(--ink-3)', background: 'var(--line-2)' }}>
                     {gap.label}
