@@ -1,0 +1,45 @@
+/* Async states for the reserve view — the source design shipped without them. */
+
+.reserve-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.reserve-skel-row { display: grid; gap: 10px; }
+.reserve-skel-row.tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.reserve-skel-row.bars { grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: end; }
+.reserve-skel-row.list { grid-template-columns: minmax(0, 1fr); }
+
+.reserve-skel-cell {
+  background: linear-gradient(90deg, #eef1f6 0%, #f8fafc 50%, #eef1f6 100%);
+  background-size: 200% 100%;
+  border-radius: 10px;
+  animation: reserve-skel-shine 1.4s ease-in-out infinite;
+}
+
+.reserve-skel-cell.tile { height: 86px; }
+.reserve-skel-cell.bar { height: 124px; border-radius: 6px 6px 2px 2px; }
+.reserve-skel-cell.line { height: 34px; }
+.reserve-skel-cell.row { height: 30px; }
+
+.reserve-error-title { display: inline-flex; align-items: center; gap: 6px; }
+
+@keyframes reserve-skel-shine {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (max-width: 1360px) {
+  .reserve-skel-row.tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 860px) {
+  .reserve-skel-row.tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reserve-skel-row.bars { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reserve-skel-cell { animation: none; }
+}

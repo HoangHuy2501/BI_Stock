@@ -1,0 +1,45 @@
+/* Supplementary WIP-view styles. Everything else is the ported stock.css. */
+
+.wip-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.wip-skel-bar {
+  height: 13px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, #edf0f5 0%, #f7f9fc 50%, #edf0f5 100%);
+  background-size: 200% 100%;
+  animation: wip-skel-sweep 1400ms ease-in-out infinite;
+}
+
+.wip-skel-bar.is-tall {
+  height: 78px;
+}
+
+@keyframes wip-skel-sweep {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wip-skel-bar {
+    animation: none;
+  }
+}
+
+.wip-tag-error {
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--red-50);
+  color: var(--red);
+  font-size: 11.5px;
+}
+

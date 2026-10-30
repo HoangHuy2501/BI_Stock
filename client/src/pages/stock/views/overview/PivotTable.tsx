@@ -1,0 +1,334 @@
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
+
+import type { StockMeta } from '@shared/api.interface';
+
+import { num } from '../../lib/format';
+import type { MonthAxis, PivotCell, PivotStore } from '../../lib/model';
+import { storeLabel } from '../../lib/store';
+
+const PAGE_SIZES = [10, 20, 50, 100];
+
+interface FlatRow {
+  wh: number;
+  cat: number;
+  cust: number;
+  cells: PivotCell[];
+  qty: number;
+  usd: number;
+}
+
+interface PivotTableProps {
+  stores: PivotStore[];
+  meta: StockMeta;
+  axis: MonthAxis;
+  span: number;
+  wh: number;
+  cat: number;
+  cust: number;
+  onWh: (idx: number) => void;
+  onCat: (idx: number) => void;
+  onCust: (idx: number) => void;
+}
+
+const pageNumbers = (pages: number, current: number): (number | string)[] => {
+  const out: (number | string)[] = [];
+  if (pages <= 7) {
+    for (let page = 1; page <= pages; page += 1) out.push(page);
+    return out;
+  }
+  if (current <= 5) {
+    [1, 2, 3, 4, 5].forEach((page: number) => out.push(page));
+    out.push('…', pages);
+    return out;
+  }
+  if (current >= pages - 4) {
+    out.push(1, '…');
+    for (let page = pages - 4; page <= pages; page += 1) out.push(page);
+    return out;
+  }
+  out.push(1, '…', current - 1, current, current + 1, '…', pages);
+  return out;
+};
+
+const cellKeys = (pick: () => void) => (event: KeyboardEvent<HTMLTableCellElement>): void => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    pick();
+  }
+};
+
+const PivotTable = ({ stores, meta, axis, span, wh, cat, cust, onWh, onCat, onCust }: PivotTableProps) => {
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [gotoPage, setGotoPage] = useState('');
+
+  const months: string[] = axis.labels;
+  const shownMonths = useMemo(() => {
+    const newestFirst = months.slice().reverse();
+    return span > 0 ? newestFirst.slice(0, span) : newestFirst;
+  }, [months, span]);
+  /* pivot cells are stored oldest-first; month columns render newest-first */
+  const at = (cells: PivotCell[], j: number): PivotCell => cells[months.length - 1 - j];
+
+  const flat = useMemo<FlatRow[]>(() => {
+    const out: FlatRow[] = [];
+    stores.forEach((store: PivotStore) => {
+      store.cats.forEach((category) => {
+        category.buyers.forEach((buyer) => {
+          out.push({
+            wh: store.idx,
+            cat: category.idx,
+            cust: buyer.idx,
+            cells: buyer.cells,
+            qty: buyer.qty,
+            usd: buyer.usd,
+          });
+        });
+      });
+    });
+    return out;
+  }, [stores]);
+
+  const pages = Math.max(1, Math.ceil(flat.length / pageSize));
+  const safe = Math.min(page, pages - 1);
+  const start = safe * pageSize;
+  const slice = flat.slice(start, start + pageSize);
+
+  const spans = slice.map((row: FlatRow, index: number) => {
+    const prev = index > 0 ? slice[index - 1] : null;
+    const whStart = !prev || prev.wh !== row.wh;
+    const catStart = whStart || prev.cat !== row.cat;
+    let whSpan = 0;
+    let catSpan = 0;
+    if (whStart) {
+      whSpan = 1;
+      while (index + whSpan < slice.length && slice[index + whSpan].wh === row.wh) whSpan += 1;
+    }
+    if (catStart) {
+      catSpan = 1;
+      while (
+        index + catSpan < slice.length &&
+        slice[index + catSpan].wh === row.wh &&
+        slice[index + catSpan].cat === row.cat
+      ) {
+        catSpan += 1;
+      }
+    }
+    return { wh: whSpan, cat: catSpan };
+  });
+
+  const totals = shownMonths.map((_label: string, j: number) =>
+    flat.reduce(
+      (acc, row: FlatRow) => {
+        const cell = at(row.cells, j);
+        acc.qty += cell.qty;
+        acc.usd += cell.usd;
+        return acc;
+      },
+      { qty: 0, usd: 0 },
+    ),
+  );
+  const grandQty = flat.reduce((sum: number, row: FlatRow) => sum + row.qty, 0);
+  const grandUsd = flat.reduce((sum: number, row: FlatRow) => sum + row.usd, 0);
+
+  useEffect(() => {
+    setPage(0);
+  }, [span, pageSize, stores]);
+
+  const jump = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    const target = parseInt(gotoPage, 10);
+    if (!isNaN(target)) setPage(Math.max(0, Math.min(pages - 1, target - 1)));
+    setGotoPage('');
+  };
+
+  return (
+    <div className="pivot-block">
+      <div className="table-scroll">
+        <table className="pivot">
+          <thead>
+            <tr className="groups">
+              <th className="corner c-wh" rowSpan={2}>
+                Warehouse 仓库
+              </th>
+              <th className="corner" rowSpan={2}>
+                Category 类别
+              </th>
+              <th className="corner" rowSpan={2}>
+                Buyer 客户
+              </th>
+              {shownMonths.map((label: string, j: number) => (
+                <th
+                  key={label}
+                  className={`grp month${j === 0 ? ' latest' : ''}${label.slice(5) === '01' ? ' yr-start' : ''}`}
+                  colSpan={2}
+                  title={label}
+                >
+                  {label}
+                </th>
+              ))}
+              <th className="grp" colSpan={2}>
+                Total
+              </th>
+            </tr>
+            <tr className="subs">
+              {shownMonths.map((label: string) => (
+                <Fragment key={label}>
+                  <th className="sub">Qty</th>
+                  <th className="sub">USD</th>
+                </Fragment>
+              ))}
+              <th className="sub">Qty</th>
+              <th className="sub">USD</th>
+            </tr>
+          </thead>
+          <tbody>
+            {slice.map((row: FlatRow, index: number) => {
+              const whLabel = storeLabel(meta.warehouses[row.wh]);
+              return (
+                <tr key={`${row.wh}|${row.cat}|${row.cust}`}>
+                  {spans[index].wh ? (
+                    <td
+                      className="rowh wcell"
+                      rowSpan={spans[index].wh}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={wh === row.wh}
+                      onClick={() => onWh(wh === row.wh ? -1 : row.wh)}
+                      onKeyDown={cellKeys(() => onWh(wh === row.wh ? -1 : row.wh))}
+                    >
+                      {whLabel.primary}
+                      {whLabel.secondary ? <span className="wh-2">{whLabel.secondary}</span> : null}
+                    </td>
+                  ) : null}
+                  {spans[index].cat ? (
+                    <td
+                      className="rowh cat-cell"
+                      rowSpan={spans[index].cat}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={cat === row.cat}
+                      onClick={() => onCat(cat === row.cat ? -1 : row.cat)}
+                      onKeyDown={cellKeys(() => onCat(cat === row.cat ? -1 : row.cat))}
+                    >
+                      {meta.categories[row.cat]?.nameZh ?? ''}
+                    </td>
+                  ) : null}
+                  <td
+                    className="buyer-cell"
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={cust === row.cust}
+                    onClick={() => onCust(cust === row.cust ? -1 : row.cust)}
+                    onKeyDown={cellKeys(() => onCust(cust === row.cust ? -1 : row.cust))}
+                  >
+                    {meta.customers[row.cust] ?? ''}
+                  </td>
+                  {shownMonths.map((label: string, j: number) => {
+                    const cell = at(row.cells, j);
+                    return (
+                      <Fragment key={label}>
+                        <td className={cell.qty ? 'cell' : 'cell empty'}>{cell.qty ? num(cell.qty) : '–'}</td>
+                        <td className={cell.usd ? 'cell usd' : 'cell usd empty'}>
+                          {cell.usd ? num(cell.usd) : '–'}
+                        </td>
+                      </Fragment>
+                    );
+                  })}
+                  <td className="cell">{num(row.qty)}</td>
+                  <td className="cell usd">{num(row.usd)}</td>
+                </tr>
+              );
+            })}
+            <tr className="total-row">
+              <td colSpan={3}>Total 合计</td>
+              {totals.map((total, j: number) => (
+                <Fragment key={shownMonths[j]}>
+                  <td className="cell">{num(total.qty)}</td>
+                  <td className="cell usd">{num(total.usd)}</td>
+                </Fragment>
+              ))}
+              <td className="cell">{num(grandQty)}</td>
+              <td className="cell usd">{num(grandUsd)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="sheet-foot">
+        <span className="foot-total">
+          Total: <b>{num(flat.length)}</b>
+        </span>
+        <div className="foot-right">
+          <div className="pager-btns">
+            <button
+              type="button"
+              className="page-btn"
+              onClick={() => setPage(Math.max(0, safe - 1))}
+              disabled={safe === 0}
+              aria-label="Previous page"
+            >
+              ‹
+            </button>
+            {pageNumbers(pages, safe + 1).map((entry: number | string, index: number) =>
+              typeof entry === 'string' ? (
+                <span className="page-gap" key={`gap${index}`}>
+                  {entry}
+                </span>
+              ) : (
+                <button
+                  key={entry}
+                  type="button"
+                  className={`page-btn${entry === safe + 1 ? ' current' : ''}`}
+                  onClick={() => setPage(entry - 1)}
+                  aria-current={entry === safe + 1 ? 'page' : undefined}
+                >
+                  {entry}
+                </button>
+              ),
+            )}
+            <button
+              type="button"
+              className="page-btn"
+              onClick={() => setPage(Math.min(pages - 1, safe + 1))}
+              disabled={safe >= pages - 1}
+              aria-label="Next page"
+            >
+              ›
+            </button>
+          </div>
+          <select
+            className="foot-size"
+            value={pageSize}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+              setPageSize(Number(event.target.value));
+              setPage(0);
+            }}
+            aria-label="Rows per page"
+          >
+            {PAGE_SIZES.map((size: number) => (
+              <option key={size} value={size}>
+                {size} / page
+              </option>
+            ))}
+          </select>
+          <form className="foot-goto" onSubmit={jump}>
+            <span>Go to</span>
+            <input
+              value={gotoPage}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setGotoPage(event.target.value.replace(/[^0-9]/g, ''))
+              }
+              inputMode="numeric"
+              aria-label="Page number"
+            />
+            <span>Page</span>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PivotTable;

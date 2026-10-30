@@ -1,0 +1,1846 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BI Stock - API client contract",
+    "version": "1.0.0",
+    "description": "Hợp đồng 7 API mà client React đang gọi. Đường dẫn mặc định cùng origin; có thể trỏ sang server khác bằng VITE_API_BASE_URL khi build client. Mọi response thành công là JSON. Các kiểu dữ liệu đối chiếu với client/src/shared/api.interface.ts và client/src/api/stock.ts. Server mới phải trả /wip và /reserve với lớp bọc { data, cache }."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Cùng origin với client; thay bằng URL server API của bạn khi dùng Swagger/OpenAPI."
+    }
+  ],
+  "paths": {
+    "/api/stock/overview": {
+      "get": {
+        "tags": [
+          "Stock"
+        ],
+        "summary": "Dữ liệu tổng quan tồn kho",
+        "description": "Cấp meta, cube để client tự tính biểu đồ, kèm WIP summary và reserve summary.",
+        "operationId": "getStockOverview",
+        "responses": {
+          "200": {
+            "description": "Thành công.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Tham số hoặc body không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi máy chủ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/detail": {
+      "get": {
+        "tags": [
+          "Stock"
+        ],
+        "summary": "Dòng tồn kho có lọc và phân trang",
+        "operationId": "getStockDetail",
+        "parameters": [
+          {
+            "name": "cust",
+            "in": "query",
+            "required": false,
+            "description": "Lọc theo khách hàng.",
+            "schema": {
+              "type": "integer",
+              "description": "customerIdx trong meta.customers.",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "wh",
+            "in": "query",
+            "required": false,
+            "description": "Lọc theo kho.",
+            "schema": {
+              "type": "integer",
+              "description": "warehouseIdx trong meta.warehouses.",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "cat",
+            "in": "query",
+            "required": false,
+            "description": "Lọc theo nhóm hàng.",
+            "schema": {
+              "type": "integer",
+              "description": "categoryIdx trong meta.categories.",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "age",
+            "in": "query",
+            "required": false,
+            "description": "Lọc tuổi: 0=0–30, 1=31–60, 2=61–90, 3=91–180, 4=181–365, 5=366+ ngày.",
+            "schema": {
+              "type": "integer",
+              "description": "Nhóm tuổi từ 0 đến 5.",
+              "minimum": 0,
+              "maximum": 5
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Năm YYYY.",
+            "schema": {
+              "type": "string",
+              "description": "Năm của lotDate.",
+              "pattern": "^\\d{4}$"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Chuỗi tìm kiếm.",
+            "schema": {
+              "type": "string",
+              "description": "Tìm trong goodsNo, itemName, batchNo, customerName.",
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "age tương ứng ageDays.",
+            "schema": {
+              "type": "string",
+              "description": "Cột sắp xếp.",
+              "enum": [
+                "usd",
+                "age",
+                "qty"
+              ],
+              "default": "usd"
+            }
+          },
+          {
+            "name": "dir",
+            "in": "query",
+            "required": false,
+            "description": "Chiều sắp xếp.",
+            "schema": {
+              "type": "string",
+              "description": "Chiều sắp xếp.",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Trang hiện tại.",
+            "schema": {
+              "type": "integer",
+              "description": "Số trang từ 1.",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "Client hiện gửi 12.",
+            "schema": {
+              "type": "integer",
+              "description": "Số dòng mỗi trang.",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Tham số hoặc body không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi máy chủ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/wip": {
+      "get": {
+        "tags": [
+          "WIP"
+        ],
+        "summary": "Dataset WIP",
+        "description": "Trả summary, danh sách khách hàng, lots kèm cause/blueFlag và thông tin cache. Bắt buộc bọc trong { data, cache }.",
+        "operationId": "getWipDataset",
+        "responses": {
+          "200": {
+            "description": "Thành công.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WipDatasetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Tham số hoặc body không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi máy chủ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/reserve": {
+      "get": {
+        "tags": [
+          "Reserve"
+        ],
+        "summary": "Dataset kho lưu",
+        "description": "Trả thống kê nhóm tuổi, histogram, khách hàng, rows chi tiết và thông tin cache. Bắt buộc bọc trong { data, cache }.",
+        "operationId": "getReserveDataset",
+        "responses": {
+          "200": {
+            "description": "Thành công.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReserveDatasetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Tham số hoặc body không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi máy chủ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/source/status": {
+      "get": {
+        "tags": [
+          "Operations"
+        ],
+        "summary": "Trạng thái nguồn dữ liệu và cache",
+        "description": "Dùng cho màn hình API Console. Có thể trả configured=false, baseUrl=null và tokenMasked=null khi không có upstream.",
+        "operationId": "getStockSourceStatus",
+        "responses": {
+          "200": {
+            "description": "Thành công.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockSourceStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Tham số hoặc body không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi máy chủ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/cache/refresh": {
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "summary": "Làm mới cache reserve/WIP",
+        "description": "Gửi {} để làm mới cả hai hoặc keys để chọn dataset. Trả kết quả thành công và thất bại theo từng key.",
+        "operationId": "refreshStockCache",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockCacheRefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Thành công.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockCacheRefreshResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Tham số hoặc body không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi máy chủ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/wip/lots/{id}/tag": {
+      "put": {
+        "tags": [
+          "WIP"
+        ],
+        "summary": "Cập nhật tag của một lot WIP",
+        "description": "Client gửi cả cause và blueFlag; server cần lưu để lần GET /wip tiếp theo phản ánh giá trị mới.",
+        "operationId": "updateWipLotTag",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID lot lấy từ data.lots[].id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WipTagUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Thành công.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WipTag"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cause hoặc blueFlag không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy lot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi máy chủ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StockWarehouse": {
+        "type": "object",
+        "required": [
+          "idx",
+          "nameZh",
+          "nameEn",
+          "rawName",
+          "totalUsd"
+        ],
+        "properties": {
+          "idx": {
+            "type": "integer",
+            "description": "Chỉ số kho, dùng để đối chiếu với warehouseIdx của cube và detail."
+          },
+          "nameZh": {
+            "type": "string",
+            "description": "Tên kho tiếng Trung."
+          },
+          "nameEn": {
+            "type": "string",
+            "description": "Tên kho tiếng Anh."
+          },
+          "rawName": {
+            "type": "string",
+            "description": "Tên kho gốc từ nguồn dữ liệu."
+          },
+          "totalUsd": {
+            "type": "number",
+            "description": "Tổng giá trị USD của kho."
+          }
+        }
+      },
+      "StockCategory": {
+        "type": "object",
+        "required": [
+          "idx",
+          "nameZh",
+          "nameEn"
+        ],
+        "properties": {
+          "idx": {
+            "type": "integer",
+            "description": "Chỉ số nhóm hàng, dùng để đối chiếu với categoryIdx."
+          },
+          "nameZh": {
+            "type": "string",
+            "description": "Tên nhóm hàng tiếng Trung."
+          },
+          "nameEn": {
+            "type": "string",
+            "description": "Tên nhóm hàng tiếng Anh."
+          }
+        }
+      },
+      "StockMeta": {
+        "type": "object",
+        "required": [
+          "snapshotDate",
+          "lineCount",
+          "skuCount",
+          "totalUsd",
+          "totalQty",
+          "detailCount",
+          "detailUsd",
+          "spanFrom",
+          "spanTo",
+          "months",
+          "years",
+          "ages",
+          "warehouses",
+          "categories",
+          "customers"
+        ],
+        "properties": {
+          "snapshotDate": {
+            "type": "string",
+            "description": "Ngày chốt số liệu, YYYY-MM-DD.",
+            "format": "date"
+          },
+          "lineCount": {
+            "type": "integer",
+            "description": "Tổng số dòng tồn kho."
+          },
+          "skuCount": {
+            "type": "integer",
+            "description": "Số SKU."
+          },
+          "totalUsd": {
+            "type": "number",
+            "description": "Tổng giá trị USD."
+          },
+          "totalQty": {
+            "type": "number",
+            "description": "Tổng số lượng."
+          },
+          "detailCount": {
+            "type": "integer",
+            "description": "Số dòng chi tiết."
+          },
+          "detailUsd": {
+            "type": "number",
+            "description": "Tổng USD của dữ liệu chi tiết."
+          },
+          "spanFrom": {
+            "type": "string",
+            "description": "Tháng bắt đầu của trục thời gian, YYYY-MM."
+          },
+          "spanTo": {
+            "type": "string",
+            "description": "Tháng kết thúc của trục thời gian, YYYY-MM."
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Các tháng YYYY-MM; monthIdx trong cube là chỉ số trong mảng này."
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Các năm YYYY; yearIdx trong cube là chỉ số trong mảng này."
+          },
+          "ages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Sáu nhóm tuổi theo thứ tự: 0–30, 31–60, 61–90, 91–180, 181–365, 365+. ageIdx đối chiếu theo vị trí."
+          },
+          "warehouses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockWarehouse"
+            },
+            "description": "Danh mục kho. Giữ idx liên tiếp từ 0 và khớp vị trí trong mảng vì biểu đồ client dùng cả idx lẫn vị trí."
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockCategory"
+            },
+            "description": "Danh mục nhóm hàng. Giữ idx liên tiếp từ 0 và khớp vị trí trong mảng."
+          },
+          "customers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tên khách hàng; customerIdx là vị trí trong mảng."
+          }
+        }
+      },
+      "StockCubeCell": {
+        "type": "object",
+        "description": "Một ô dữ liệu tổng hợp theo khách hàng, kho, nhóm hàng, tuổi, năm và tháng.",
+        "required": [
+          "customerIdx",
+          "warehouseIdx",
+          "categoryIdx",
+          "ageIdx",
+          "yearIdx",
+          "monthIdx",
+          "qty",
+          "usd",
+          "lines"
+        ],
+        "properties": {
+          "customerIdx": {
+            "type": "integer",
+            "description": "Chỉ số khách hàng trong meta.customers."
+          },
+          "warehouseIdx": {
+            "type": "integer",
+            "description": "Chỉ số kho trong meta.warehouses."
+          },
+          "categoryIdx": {
+            "type": "integer",
+            "description": "Chỉ số nhóm hàng trong meta.categories."
+          },
+          "ageIdx": {
+            "type": "integer",
+            "description": "Chỉ số nhóm tuổi trong meta.ages, từ 0 đến 5.",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "yearIdx": {
+            "type": "integer",
+            "description": "Chỉ số năm trong meta.years."
+          },
+          "monthIdx": {
+            "type": "integer",
+            "description": "Chỉ số tháng trong meta.months."
+          },
+          "qty": {
+            "type": "number",
+            "description": "Tổng số lượng của ô."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Tổng giá trị USD của ô."
+          },
+          "lines": {
+            "type": "integer",
+            "description": "Số dòng của ô."
+          }
+        }
+      },
+      "WipLightBucket": {
+        "type": "object",
+        "required": [
+          "usd",
+          "qty",
+          "lines"
+        ],
+        "properties": {
+          "usd": {
+            "type": "number",
+            "description": "Tổng giá trị USD."
+          },
+          "qty": {
+            "type": "number",
+            "description": "Tổng số lượng."
+          },
+          "lines": {
+            "type": "integer",
+            "description": "Số dòng/lot."
+          }
+        }
+      },
+      "WipWeekBucket": {
+        "type": "object",
+        "required": [
+          "label",
+          "usd",
+          "lines",
+          "byLight"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Nhãn khoảng thời gian."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Tổng USD trong khoảng."
+          },
+          "lines": {
+            "type": "integer",
+            "description": "Số dòng/lot trong khoảng."
+          },
+          "byLight": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "USD theo thứ tự đèn xanh, vàng, cam, đỏ. Client dùng các số này để chia đoạn biểu đồ."
+          }
+        }
+      },
+      "StockWipSummary": {
+        "type": "object",
+        "required": [
+          "storeIdx",
+          "usd",
+          "qty",
+          "lines",
+          "oldest",
+          "redUsd",
+          "redLines",
+          "registerUsd",
+          "registerLines",
+          "lights",
+          "weeks",
+          "catLight",
+          "custLight"
+        ],
+        "properties": {
+          "storeIdx": {
+            "type": "integer",
+            "description": "Chỉ số kho WIP trong meta.warehouses."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Tổng USD WIP."
+          },
+          "qty": {
+            "type": "number",
+            "description": "Tổng số lượng WIP."
+          },
+          "lines": {
+            "type": "integer",
+            "description": "Tổng số dòng/lot WIP."
+          },
+          "oldest": {
+            "type": "number",
+            "description": "Số ngày WIP lớn nhất."
+          },
+          "redUsd": {
+            "type": "number",
+            "description": "Tổng USD thuộc đèn đỏ."
+          },
+          "redLines": {
+            "type": "integer",
+            "description": "Số dòng/lot đèn đỏ."
+          },
+          "registerUsd": {
+            "type": "number",
+            "description": "Tổng USD trong bảng đăng ký WIP."
+          },
+          "registerLines": {
+            "type": "integer",
+            "description": "Số dòng trong bảng đăng ký WIP."
+          },
+          "lights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WipLightBucket"
+            },
+            "description": "Bốn phần tử theo thứ tự: xanh ≤14 ngày, vàng 15–21, cam 22–28, đỏ ≥29 ngày.",
+            "minItems": 4
+          },
+          "weeks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WipWeekBucket"
+            },
+            "description": "Các bucket thời gian WIP; client dùng vị trí bucket để lọc lot."
+          },
+          "catLight": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "description": "Các mảng tổng hợp theo category và light; khai báo phía client là number[][]."
+          },
+          "custLight": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "description": "Một bộ [customerIdx, lightIdx, usd, lines].",
+              "minItems": 4
+            },
+            "description": "Tổng hợp theo khách và đèn. Client tìm phần tử lightIdx = 3 để hiện khách hàng đèn đỏ."
+          }
+        }
+      },
+      "ReserveBand": {
+        "type": "object",
+        "required": [
+          "key",
+          "labelZh",
+          "labelEn",
+          "fromMonth",
+          "toMonth",
+          "usd",
+          "qty",
+          "lines"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Mã nhóm tuổi kho lưu.",
+            "enum": [
+              "lt3",
+              "m3",
+              "m6",
+              "m9",
+              "gte12"
+            ]
+          },
+          "labelZh": {
+            "type": "string",
+            "description": "Nhãn tiếng Trung."
+          },
+          "labelEn": {
+            "type": "string",
+            "description": "Nhãn tiếng Anh."
+          },
+          "fromMonth": {
+            "type": "number",
+            "description": "Cận dưới tháng, bao gồm."
+          },
+          "toMonth": {
+            "type": "number",
+            "description": "Cận trên tháng, không bao gồm."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Tổng USD của nhóm."
+          },
+          "qty": {
+            "type": "number",
+            "description": "Tổng số lượng của nhóm."
+          },
+          "lines": {
+            "type": "integer",
+            "description": "Số dòng/lot của nhóm."
+          }
+        }
+      },
+      "ReserveSummary": {
+        "type": "object",
+        "required": [
+          "warehouseIdx",
+          "nameZh",
+          "nameEn",
+          "usd",
+          "qty",
+          "lines",
+          "atRiskUsd",
+          "atRiskLines",
+          "oldestMonths",
+          "oldestLines",
+          "oldestBandIndex",
+          "bands"
+        ],
+        "properties": {
+          "warehouseIdx": {
+            "type": "integer",
+            "description": "Chỉ số kho lưu."
+          },
+          "nameZh": {
+            "type": "string",
+            "description": "Tên kho lưu tiếng Trung."
+          },
+          "nameEn": {
+            "type": "string",
+            "description": "Tên kho lưu tiếng Anh."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Tổng USD kho lưu."
+          },
+          "qty": {
+            "type": "number",
+            "description": "Tổng số lượng kho lưu."
+          },
+          "lines": {
+            "type": "integer",
+            "description": "Số dòng/lot kho lưu."
+          },
+          "atRiskUsd": {
+            "type": "number",
+            "description": "Tổng USD từ 6 tháng trở lên."
+          },
+          "atRiskLines": {
+            "type": "integer",
+            "description": "Số dòng/lot từ 6 tháng trở lên."
+          },
+          "oldestMonths": {
+            "type": "number",
+            "description": "Tuổi tồn kho lớn nhất hoặc mốc tuổi cũ nhất, tính theo tháng."
+          },
+          "oldestLines": {
+            "type": "integer",
+            "description": "Số dòng ở nhóm tuổi cũ nhất."
+          },
+          "oldestBandIndex": {
+            "type": "integer",
+            "description": "Chỉ số nhóm tuổi cũ nhất trong bands."
+          },
+          "bands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReserveBand"
+            },
+            "description": "Năm nhóm tuổi: <3, 3–6, 6–9, 9–12, ≥12 tháng.",
+            "minItems": 5
+          }
+        }
+      },
+      "StockOverviewResponse": {
+        "type": "object",
+        "required": [
+          "meta",
+          "cube",
+          "wipSummary",
+          "reserveSummary"
+        ],
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/StockMeta"
+          },
+          "cube": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockCubeCell"
+            },
+            "description": "Client tự tính biểu đồ và bộ lọc từ mảng này."
+          },
+          "wipSummary": {
+            "$ref": "#/components/schemas/StockWipSummary"
+          },
+          "reserveSummary": {
+            "$ref": "#/components/schemas/ReserveSummary"
+          }
+        }
+      },
+      "StockDetailLine": {
+        "type": "object",
+        "required": [
+          "id",
+          "goodsNo",
+          "itemName",
+          "categoryIdx",
+          "categoryZh",
+          "categoryEn",
+          "customerIdx",
+          "customerName",
+          "warehouseIdx",
+          "warehouseZh",
+          "warehouseEn",
+          "qty",
+          "unit",
+          "usd",
+          "ageDays",
+          "batchNo",
+          "lotDate",
+          "reasonWh",
+          "reasonDl"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID duy nhất của dòng tồn kho."
+          },
+          "goodsNo": {
+            "type": "string",
+            "description": "Mã hàng."
+          },
+          "itemName": {
+            "type": "string",
+            "description": "Tên hàng."
+          },
+          "categoryIdx": {
+            "type": "integer",
+            "description": "Chỉ số nhóm hàng."
+          },
+          "categoryZh": {
+            "type": "string",
+            "description": "Tên nhóm hàng tiếng Trung."
+          },
+          "categoryEn": {
+            "type": "string",
+            "description": "Tên nhóm hàng tiếng Anh."
+          },
+          "customerIdx": {
+            "type": "integer",
+            "description": "Chỉ số khách hàng."
+          },
+          "customerName": {
+            "type": "string",
+            "description": "Tên khách hàng."
+          },
+          "warehouseIdx": {
+            "type": "integer",
+            "description": "Chỉ số kho."
+          },
+          "warehouseZh": {
+            "type": "string",
+            "description": "Tên kho tiếng Trung."
+          },
+          "warehouseEn": {
+            "type": "string",
+            "description": "Tên kho tiếng Anh."
+          },
+          "qty": {
+            "type": "number",
+            "description": "Số lượng."
+          },
+          "unit": {
+            "type": "string",
+            "description": "Đơn vị."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Giá trị USD."
+          },
+          "ageDays": {
+            "type": "number",
+            "description": "Số ngày tồn kho."
+          },
+          "batchNo": {
+            "type": "string",
+            "description": "Mã batch/lot."
+          },
+          "lotDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ngày lot YYYY-MM-DD; null nếu không có ngày."
+          },
+          "reasonWh": {
+            "type": "string",
+            "description": "Lý do từ kho; dùng chuỗi rỗng nếu không có."
+          },
+          "reasonDl": {
+            "type": "string",
+            "description": "Lý do từ dữ liệu chi tiết; dùng chuỗi rỗng nếu không có."
+          }
+        }
+      },
+      "StockDetailResponse": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockDetailLine"
+            },
+            "description": "Các dòng của trang hiện tại."
+          },
+          "total": {
+            "type": "integer",
+            "description": "Tổng số dòng sau khi lọc, trước phân trang."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Trang hiện tại, bắt đầu từ 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Số dòng mỗi trang."
+          }
+        }
+      },
+      "WipLotItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "goodsNo",
+          "itemName",
+          "customerIdx",
+          "customerName",
+          "qty",
+          "unit",
+          "usd",
+          "days",
+          "batchNo",
+          "lotDate",
+          "cause",
+          "blueFlag"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID duy nhất của lot; dùng làm :id khi cập nhật tag."
+          },
+          "goodsNo": {
+            "type": "string",
+            "description": "Mã hàng."
+          },
+          "itemName": {
+            "type": "string",
+            "description": "Tên hàng."
+          },
+          "customerIdx": {
+            "type": "integer",
+            "description": "Chỉ số khách hàng trong data.customers."
+          },
+          "customerName": {
+            "type": "string",
+            "description": "Tên khách hàng."
+          },
+          "qty": {
+            "type": "number",
+            "description": "Số lượng."
+          },
+          "unit": {
+            "type": "string",
+            "description": "Đơn vị."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Giá trị USD."
+          },
+          "days": {
+            "type": "number",
+            "description": "Số ngày trên chuyền."
+          },
+          "batchNo": {
+            "type": "string",
+            "description": "Mã batch/lot."
+          },
+          "lotDate": {
+            "type": "string",
+            "description": "Ngày lot YYYY-MM-DD.",
+            "format": "date"
+          },
+          "cause": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lý do WIP; null nếu chưa phân loại.",
+            "enum": [
+              "bom",
+              "over",
+              "scrap",
+              "quality",
+              "delay",
+              null
+            ]
+          },
+          "blueFlag": {
+            "type": "boolean",
+            "description": "Có được đánh dấu xanh dương hay không."
+          }
+        }
+      },
+      "WipDataset": {
+        "type": "object",
+        "required": [
+          "summary",
+          "customers",
+          "lots"
+        ],
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/StockWipSummary"
+          },
+          "customers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Danh sách khách hàng; customerIdx trong lots đối chiếu theo vị trí."
+          },
+          "lots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WipLotItem"
+            },
+            "description": "Danh sách lot kèm tag đã lưu."
+          }
+        }
+      },
+      "ReserveHistBar": {
+        "type": "object",
+        "required": [
+          "label",
+          "fromMonth",
+          "toMonth",
+          "bandIndex",
+          "usd",
+          "lines"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Nhãn khoảng tháng."
+          },
+          "fromMonth": {
+            "type": "number",
+            "description": "Cận dưới tháng, bao gồm."
+          },
+          "toMonth": {
+            "type": "number",
+            "description": "Cận trên tháng, không bao gồm."
+          },
+          "bandIndex": {
+            "type": "integer",
+            "description": "Chỉ số màu/nhóm tương ứng trong bands."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Tổng USD."
+          },
+          "lines": {
+            "type": "integer",
+            "description": "Số dòng/lot."
+          }
+        }
+      },
+      "ReserveBuyer": {
+        "type": "object",
+        "required": [
+          "idx",
+          "name",
+          "usd",
+          "lines"
+        ],
+        "properties": {
+          "idx": {
+            "type": "integer",
+            "description": "Chỉ số khách hàng."
+          },
+          "name": {
+            "type": "string",
+            "description": "Tên khách hàng."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Tổng USD."
+          },
+          "lines": {
+            "type": "integer",
+            "description": "Số dòng/lot."
+          }
+        }
+      },
+      "ReserveDataset": {
+        "type": "object",
+        "required": [
+          "warehouseIdx",
+          "nameZh",
+          "nameEn",
+          "usd",
+          "qty",
+          "lines",
+          "itemisedUsd",
+          "bands",
+          "hist",
+          "atRiskUsd",
+          "atRiskLines",
+          "oldestMonths",
+          "oldestLines",
+          "oldestBandIndex",
+          "buyers",
+          "bandBuyers",
+          "rows"
+        ],
+        "properties": {
+          "warehouseIdx": {
+            "type": "integer",
+            "description": "Chỉ số kho lưu."
+          },
+          "nameZh": {
+            "type": "string",
+            "description": "Tên kho lưu tiếng Trung."
+          },
+          "nameEn": {
+            "type": "string",
+            "description": "Tên kho lưu tiếng Anh."
+          },
+          "usd": {
+            "type": "number",
+            "description": "Tổng USD kho lưu."
+          },
+          "qty": {
+            "type": "number",
+            "description": "Tổng số lượng kho lưu."
+          },
+          "lines": {
+            "type": "integer",
+            "description": "Số dòng/lot kho lưu."
+          },
+          "itemisedUsd": {
+            "type": "number",
+            "description": "Tổng USD của rows; có thể nhỏ hơn usd nếu dữ liệu chi tiết không phủ hết."
+          },
+          "bands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReserveBand"
+            },
+            "description": "Năm nhóm tuổi <3, 3–6, 6–9, 9–12, ≥12 tháng."
+          },
+          "hist": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReserveHistBar"
+            },
+            "description": "Bảy cột tuổi: 0–1, 1–2, 2–3, 3–6, 6–9, 9–12, 12+ tháng."
+          },
+          "atRiskUsd": {
+            "type": "number",
+            "description": "Tổng USD từ 6 tháng trở lên."
+          },
+          "atRiskLines": {
+            "type": "integer",
+            "description": "Số dòng/lot từ 6 tháng trở lên."
+          },
+          "oldestMonths": {
+            "type": "number",
+            "description": "Tuổi cũ nhất tính theo tháng."
+          },
+          "oldestLines": {
+            "type": "integer",
+            "description": "Số dòng ở nhóm tuổi cũ nhất."
+          },
+          "oldestBandIndex": {
+            "type": "integer",
+            "description": "Chỉ số nhóm tuổi cũ nhất trong bands."
+          },
+          "buyers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReserveBuyer"
+            },
+            "description": "Khách hàng có hàng từ 6 tháng trở lên, thường xếp theo USD giảm dần."
+          },
+          "bandBuyers": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ReserveBuyer"
+              }
+            },
+            "description": "Mảng song song với bands; mỗi phần tử là khách hàng trong nhóm tuổi đó."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockDetailLine"
+            },
+            "description": "Dòng chi tiết kho lưu. Client lọc các dòng này trên trình duyệt theo nhóm tuổi, khoảng tháng và khách hàng."
+          }
+        }
+      },
+      "StockCacheMeta": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "origin",
+          "hit",
+          "fetchedAt",
+          "expiresAt",
+          "ageSeconds",
+          "ttlSeconds",
+          "stale",
+          "itemCount",
+          "buildMs",
+          "upstreamError"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Dataset được cache.",
+            "enum": [
+              "reserve",
+              "wip"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "Tên hiển thị."
+          },
+          "origin": {
+            "type": "string",
+            "description": "Nguồn dữ liệu.",
+            "enum": [
+              "upstream",
+              "snapshot"
+            ]
+          },
+          "hit": {
+            "type": "boolean",
+            "description": "Có dùng dữ liệu cache hiện có trong request này hay không."
+          },
+          "fetchedAt": {
+            "type": "string",
+            "description": "Thời gian tạo dữ liệu dạng ISO 8601; server mẫu dùng chuỗi rỗng khi chưa có cache."
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "Thời gian hết hạn dạng ISO 8601; server mẫu dùng chuỗi rỗng khi chưa có cache."
+          },
+          "ageSeconds": {
+            "type": "number",
+            "description": "Tuổi cache tính bằng giây."
+          },
+          "ttlSeconds": {
+            "type": "number",
+            "description": "Thời hạn cache tính bằng giây."
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "Cache đã hết hạn hay chưa."
+          },
+          "itemCount": {
+            "type": "integer",
+            "description": "Số lot WIP hoặc số rows kho lưu."
+          },
+          "buildMs": {
+            "type": "number",
+            "description": "Thời gian tạo dataset, mili giây."
+          },
+          "upstreamError": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lỗi nguồn dữ liệu nếu có."
+          }
+        }
+      },
+      "WipDatasetResponse": {
+        "type": "object",
+        "description": "Bắt buộc có lớp data và cache: WipView đọc response.data.",
+        "required": [
+          "data",
+          "cache"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/WipDataset"
+          },
+          "cache": {
+            "$ref": "#/components/schemas/StockCacheMeta"
+          }
+        }
+      },
+      "ReserveDatasetResponse": {
+        "type": "object",
+        "description": "Bắt buộc có lớp data và cache: ReserveView đọc response.data.",
+        "required": [
+          "data",
+          "cache"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReserveDataset"
+          },
+          "cache": {
+            "$ref": "#/components/schemas/StockCacheMeta"
+          }
+        }
+      },
+      "StockSourceEndpoint": {
+        "type": "object",
+        "required": [
+          "name",
+          "method",
+          "path",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Tên endpoint."
+          },
+          "method": {
+            "type": "string",
+            "description": "Phương thức HTTP.",
+            "enum": [
+              "GET"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "Đường dẫn endpoint."
+          },
+          "description": {
+            "type": "string",
+            "description": "Mô tả endpoint."
+          }
+        }
+      },
+      "StockSourceCall": {
+        "type": "object",
+        "required": [
+          "id",
+          "endpoint",
+          "method",
+          "outcome",
+          "httpStatus",
+          "durationMs",
+          "message",
+          "calledAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID bản ghi."
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "Endpoint được ghi log."
+          },
+          "method": {
+            "type": "string",
+            "description": "Phương thức HTTP."
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Kết quả.",
+            "enum": [
+              "ok",
+              "error",
+              "skipped"
+            ]
+          },
+          "httpStatus": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Mã HTTP nếu có; null khi build nội bộ."
+          },
+          "durationMs": {
+            "type": "number",
+            "description": "Thời gian gọi/build, mili giây."
+          },
+          "message": {
+            "type": "string",
+            "description": "Thông tin kết quả."
+          },
+          "calledAt": {
+            "type": "string",
+            "description": "Thời điểm dạng ISO 8601."
+          }
+        }
+      },
+      "StockSourceStatusResponse": {
+        "type": "object",
+        "required": [
+          "configured",
+          "baseUrl",
+          "tokenMasked",
+          "cacheTtlSeconds",
+          "timeoutMs",
+          "endpoints",
+          "cache",
+          "recentCalls",
+          "envVars"
+        ],
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "description": "Nguồn upstream đã được cấu hình hay chưa. Server mẫu hiện trả false."
+          },
+          "baseUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "URL nguồn upstream, null nếu không cấu hình."
+          },
+          "tokenMasked": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Token đã che, null nếu không có; không trả token thật."
+          },
+          "cacheTtlSeconds": {
+            "type": "number",
+            "description": "TTL cache, giây."
+          },
+          "timeoutMs": {
+            "type": "number",
+            "description": "Timeout, mili giây."
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockSourceEndpoint"
+            },
+            "description": "Các endpoint đọc dữ liệu nguồn hiển thị trong API Console; server mẫu liệt kê reserve và wip."
+          },
+          "cache": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockCacheMeta"
+            },
+            "description": "Thông tin cache cho reserve và wip."
+          },
+          "recentCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockSourceCall"
+            },
+            "description": "Các lần gọi/build gần đây."
+          },
+          "envVars": {
+            "type": "object",
+            "required": [
+              "baseUrl",
+              "token",
+              "cacheTtl",
+              "timeout"
+            ],
+            "properties": {
+              "baseUrl": {
+                "type": "string",
+                "description": "Tên biến môi trường URL upstream."
+              },
+              "token": {
+                "type": "string",
+                "description": "Tên biến môi trường token."
+              },
+              "cacheTtl": {
+                "type": "string",
+                "description": "Tên biến môi trường TTL."
+              },
+              "timeout": {
+                "type": "string",
+                "description": "Tên biến môi trường timeout."
+              }
+            }
+          }
+        }
+      },
+      "StockCacheRefreshRequest": {
+        "type": "object",
+        "description": "Bỏ keys hoặc gửi mảng rỗng để làm mới cả reserve và wip.",
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Dataset cần làm mới.",
+              "enum": [
+                "reserve",
+                "wip"
+              ]
+            },
+            "description": "Các dataset cần làm mới."
+          }
+        }
+      },
+      "StockCacheRefreshResponse": {
+        "type": "object",
+        "required": [
+          "refreshed",
+          "failures"
+        ],
+        "properties": {
+          "refreshed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockCacheMeta"
+            },
+            "description": "Các dataset làm mới thành công."
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "message"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "Dataset thất bại.",
+                  "enum": [
+                    "reserve",
+                    "wip"
+                  ]
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Lý do thất bại."
+                }
+              }
+            },
+            "description": "Các dataset làm mới thất bại; có thể trả HTTP 200 kèm failures."
+          }
+        }
+      },
+      "WipTagUpdateRequest": {
+        "type": "object",
+        "required": [
+          "cause",
+          "blueFlag"
+        ],
+        "properties": {
+          "cause": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lý do WIP hoặc null để xóa phân loại.",
+            "enum": [
+              "bom",
+              "over",
+              "scrap",
+              "quality",
+              "delay",
+              null
+            ]
+          },
+          "blueFlag": {
+            "type": "boolean",
+            "description": "Cờ đánh dấu xanh dương."
+          }
+        }
+      },
+      "WipTag": {
+        "type": "object",
+        "required": [
+          "lotId",
+          "cause",
+          "blueFlag"
+        ],
+        "properties": {
+          "lotId": {
+            "type": "string",
+            "description": "ID lot vừa cập nhật."
+          },
+          "cause": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lý do WIP sau cập nhật.",
+            "enum": [
+              "bom",
+              "over",
+              "scrap",
+              "quality",
+              "delay",
+              null
+            ]
+          },
+          "blueFlag": {
+            "type": "boolean",
+            "description": "Cờ xanh dương sau cập nhật."
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Mã lỗi, ví dụ BAD_REQUEST, NOT_FOUND, INTERNAL_ERROR."
+              },
+              "message": {
+                "type": "string",
+                "description": "Thông báo lỗi để client hiển thị."
+              },
+              "fieldErrors": {
+                "type": "object",
+                "description": "Lỗi theo từng trường, nếu có.",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
