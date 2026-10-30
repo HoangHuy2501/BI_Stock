@@ -192,6 +192,10 @@ export interface StockDetailLine {
   lotDate: string | null;
   reasonWh: string;
   reasonDl: string;
+  moNo: string | null;      
+  custStyle: string | null;  
+  rem: string | null;       
+  pmcRem: string | null;   
 }
 
 export interface StockDetailResponse {
@@ -215,6 +219,7 @@ export interface WipLotItem {
   lotDate: string;
   cause: string | null;
   blueFlag: boolean;
+  moNo: string | null;
 }
 
 export interface WipDataset {

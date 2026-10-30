@@ -193,6 +193,7 @@ const WipRegister = ({
             <tr>
               <th>Days</th>
               <th>Lot date</th>
+              <th>MO No.</th> 
               <th>Item</th>
               <th>Buyer</th>
               <th className="r">Qty</th>
@@ -217,6 +218,7 @@ const WipRegister = ({
                     </span>
                   </td>
                   <td className="num muted">{lot.lotDate || '—'}</td>
+                  <td className="num">{lot.moNo || '—'}</td>
                   <td className="item">
                     <span className="code">{lot.goodsNo}</span>
                     <span className="nm">{lot.itemName}</span>

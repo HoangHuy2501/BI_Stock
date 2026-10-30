@@ -478,6 +478,28 @@ button, input, select { font-family: inherit; }
   font-variant-numeric: tabular-nums;
 }
 
+/* fixed-height rank cards: ~7 rows visible, the rest scrolls */
+.card.rank-card {
+  height: 430px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card.rank-card .rank-list {
+  flex: 1 1 auto;
+  min-height: 0;              /* required so a flex child can shrink and scroll */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-right: -8px;         /* push the scrollbar to the card edge */
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #d3d9e2 transparent;
+}
+
+.card.rank-card .rank-list::-webkit-scrollbar { width: 6px; }
+.card.rank-card .rank-list::-webkit-scrollbar-thumb { background: #d3d9e2; border-radius: 3px; }
+.card.rank-card .rank-list::-webkit-scrollbar-thumb:hover { background: #b9c2d0; }
+
 /* ---------- alert card ---------- */
 
 .alert-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
