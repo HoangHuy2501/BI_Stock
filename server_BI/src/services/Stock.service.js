@@ -26,5 +26,40 @@ class StockService {
             throw error
         }
     }
+    async WarehouseSummary() {
+        try {
+            const items = await StockRepository.WarehouseSummary();
+            return { items }
+        } catch (error) {
+            throw error
+        }
+    }
+    async BuyerRank() {
+        try {
+            const items = await StockRepository.BuyerRank();
+            return { items }
+        } catch (error) {
+            throw error
+        }
+    }
+    async AgedRank() {
+        try {
+
+            const items = await StockRepository.AgedRank();
+            const thresholdDays = 90;
+            return { thresholdDays, items }
+        } catch (error) {
+            throw error
+        }
+    }
+    async monthWarehouseLedge() {
+        try {
+
+            const items = await StockRepository.WarehouseLedger();
+            return items
+        } catch (error) {
+            throw error
+        }
+    }
 }
 module.exports = new StockService()
