@@ -6,9 +6,57 @@ class StockService {
             const items = await StockRepository.AnnualSummary();
             let totalUsd = 0
             items.forEach(element => {
-                totalUsd += element.a_total
+                totalUsd += element.usd
             });
             return { items, totalUsd }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async CategorySummary() {
+        try {
+            const items = await StockRepository.CategorySummary();
+            let totalUsd = 0
+            items.forEach(element => {
+                totalUsd += element.usd
+            });
+            return { items, totalUsd }
+        } catch (error) {
+            throw error
+        }
+    }
+    async WarehouseSummary() {
+        try {
+            const items = await StockRepository.WarehouseSummary();
+            return { items }
+        } catch (error) {
+            throw error
+        }
+    }
+    async BuyerRank() {
+        try {
+            const items = await StockRepository.BuyerRank();
+            return { items }
+        } catch (error) {
+            throw error
+        }
+    }
+    async AgedRank() {
+        try {
+
+            const items = await StockRepository.AgedRank();
+            const thresholdDays = 90;
+            return { thresholdDays, items }
+        } catch (error) {
+            throw error
+        }
+    }
+    async monthWarehouseLedge() {
+        try {
+
+            const items = await StockRepository.WarehouseLedger();
+            return items
         } catch (error) {
             throw error
         }
