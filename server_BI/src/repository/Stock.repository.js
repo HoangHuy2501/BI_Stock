@@ -1,5 +1,6 @@
 
 const { getPool, sql } = require('../config/connectData')
+const pagination = require('../utils/Pagination')
 class StockRepository {
     async AnnualSummary() {
         try {
@@ -21,10 +22,10 @@ class StockRepository {
         try {
             const pool = await getPool();
             const result = await pool.request().query(`
-                select CAST(ROW_NUMBER() OVER (ORDER BY effect_no) - 1 AS INT) AS categoryIdx, effect_no as nameZh, 
+                select CAST(ROW_NUMBER() OVER (ORDER BY goods_type_desc) - 1 AS INT) AS categoryIdx, goods_type_desc as nameZh, 
                     round(sum(end_usd),0) as usd
                     from bi_stock
-                    group by effect_no
+                    group by goods_type_desc
                 `)
             return result.recordset;
         } catch (error) {
@@ -126,6 +127,56 @@ class StockRepository {
                     customerName;
                 `)
             return result.recordset;
+        } catch (error) {
+            throw error
+        }
+    }
+    // api detail
+    async detail(filter = {}) {
+        try {
+            const {
+                page,
+                pageSize,
+                lot,
+                code,
+                item,
+                buyer
+            } = filter
+            const query = `SELECT
+                goods_name AS item,
+                goods_no AS code,
+                made_lot AS lot_batch, 
+                made_lot_date AS [date],
+                st_name AS warehouse,
+                mo_no,
+                cust_style,
+                ISNULL(cust_name, '-') AS buyer,
+                effect_no AS category,
+                rem,
+                pmc_rem,
+                ISNULL(NULLIF(LTRIM(RTRIM(reason)), ''), 'Not recorded') AS reason,
+                DATEDIFF(DAY, made_lot_date, CAST(GETDATE() AS DATE)) AS age_days,
+                end_qty,
+                end_usd
+            FROM bi_stock
+            where 
+            (@lot IS NULL OR made_lot LIKE '%' + @lot + '%')
+            AND (@code IS NULL OR goods_no LIKE '%' + @code + '%')
+            AND (@item IS NULL OR goods_name LIKE '%' + @item + '%')
+            AND (@buyer IS NULL OR cust_name LIKE '%' + @buyer + '%');
+        `
+            return pagination({
+                query,
+                params: {
+                    lot: lot?.trim() || null,
+                    code: code?.trim() || null,
+                    item: item?.trim() || null,
+                    buyer: buyer?.trim() || null
+                },
+                page,
+                pageSize,
+                orderBy: "[date] DESC"
+            })
         } catch (error) {
             throw error
         }
