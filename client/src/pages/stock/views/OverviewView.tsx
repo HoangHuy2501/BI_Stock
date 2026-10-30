@@ -145,10 +145,10 @@ const OverviewView = () => {
       </Card>
 
       <div className="row-2">
-        <Card zh="客户排行" en="Buyer Rank" note="by value">
+        <Card zh="客户排行" en="Buyer Rank" note="by value" className="rank-card">
           <RankList rows={model.buyerRows} picked={cust} onPick={setCust} />
         </Card>
-        <Card zh="库龄排行" en="Aged Rank" note={`past ${threshold} d`}>
+        <Card zh="库龄排行" en="Aged Rank" note={`past ${threshold} d`} className="rank-card">
           <RankList rows={model.agedRows} picked={cat} onPick={setCat} alt />
         </Card>
       </div>
