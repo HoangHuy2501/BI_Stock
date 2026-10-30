@@ -1,0 +1,28 @@
+@base=http://localhost:3000
+### Health
+GET {{base}}/health
+### Login mock user (trả về accessToken)
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email":"admin@example.com","password":"Demo@12345"}
+### Đăng ký
+POST {{base}}/api/auth/register
+Content-Type: application/json
+
+{"name":"Nguyễn Văn A","email":"new@example.com","password":"Password123!"}
+### Danh sách users (Admin token, thay YOUR_TOKEN)
+GET {{base}}/api/users
+Authorization: Bearer YOUR_TOKEN
+### Lấy user theo id
+GET {{base}}/api/users/1
+Authorization: Bearer YOUR_TOKEN
+### Cập nhật
+PUT {{base}}/api/users/2
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+
+{"name":"Tên mới"}
+### Xóa (Admin)
+DELETE {{base}}/api/users/2
+Authorization: Bearer YOUR_TOKEN
