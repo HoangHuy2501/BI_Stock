@@ -33,3 +33,20 @@ exports.GetOverview = async (req, res, next) => {
         return next(error)
     }
 }
+
+exports.GetDetail = async (req, res, next) => {
+    try {
+        const data = {
+            lot: req.query.lot,
+            item: req.query.item,
+            code: req.query.code,
+            buyer: req.query.buyer,
+            page: Number(req.query.page ?? 1),
+            pageSize: Number(req.query.pageSize ?? 25)
+        };
+        const items = await StockService.detail(data);
+        return res.json(ApiSuccess.getSelect('detail', items))
+    } catch (error) {
+        return next(error)
+    }
+}

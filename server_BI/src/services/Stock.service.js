@@ -56,6 +56,15 @@ class StockService {
         try {
 
             const items = await StockRepository.WarehouseLedger();
+            return items;
+        } catch (error) {
+            throw error
+        }
+    }
+    // api detail
+    async detail(data) {
+        try {
+            const items = await StockRepository.detail(data);
             return items
         } catch (error) {
             throw error
