@@ -24,9 +24,10 @@ export const useReserveDataset = () =>
 export const useSourceStatus = () =>
   useQuery({ queryKey: stockKeys.source, queryFn: () => stockApi.sourceStatus() });
 
-export const useStockDetail = (query: StockDetailQuery) =>
+export const useStockDetail = (query: StockDetailQuery, enabled = true) =>
   useQuery({
     queryKey: stockKeys.detail(query),
+    enabled,
     queryFn: () => stockApi.detail(query),
     placeholderData: keepPreviousData,
   });

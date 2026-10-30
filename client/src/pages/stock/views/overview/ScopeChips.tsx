@@ -1,18 +1,18 @@
 import { STOCK_AGE_LABELS } from '@shared/api.interface';
-import type { StockMeta } from '@shared/api.interface';
+import type { OverviewMeta } from '@shared/api.interface';
 
 import { storeLabel } from '../../lib/store';
 import { SCOPE_DIMENSIONS, hasScope } from './scope';
 import type { OverviewScope, ScopeDimension } from './scope';
 
 interface ScopeChipsProps {
-  meta: StockMeta;
+  meta: OverviewMeta;
   scope: OverviewScope;
   onClear: (dimension: ScopeDimension) => void;
   onClearAll: () => void;
 }
 
-const labelOf = (meta: StockMeta, scope: OverviewScope, dimension: ScopeDimension): string => {
+const labelOf = (meta: OverviewMeta, scope: OverviewScope, dimension: ScopeDimension): string => {
   switch (dimension) {
     case 'cust':
       return `Buyer · ${meta.customers[scope.cust] ?? ''}`;

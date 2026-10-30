@@ -11,8 +11,7 @@ import DetailTable from './overview/DetailTable';
 import PivotTable from './overview/PivotTable';
 import RankList from './overview/RankList';
 import StoreKpis from './overview/StoreKpis';
-import { buildOverviewModel } from './overview/model';
-import type { OverviewModel } from './overview/model';
+import { buildOverviewModel, buildSummaryOverviewModel } from './overview/model';
 import type { OverviewScope, ScopeDimension } from './overview/scope';
 
 interface MonthSpanOption {
@@ -67,11 +66,15 @@ const OverviewView = () => {
   const [year, setYear] = useState(-1);
   const [monthSpan, setMonthSpan] = useState(12);
 
-  const model: OverviewModel | null = useMemo(() => {
+  const model = useMemo(() => {
     if (!overview.data) return null;
     const filters: StockFilters = { cust, wh, cat, age, year, agedFrom };
-    return buildOverviewModel(overview.data.cube, overview.data.meta, filters);
-  }, [overview.data, cust, wh, cat, age, year, agedFrom]);
+    const data = overview.data;
+    if ('cube' in data) {
+      return { ...buildOverviewModel(data.cube, data.meta, filters), meta: data.meta, totalUsd: data.meta.totalUsd, ledgerAvailable: true };
+    }
+    return buildSummaryOverviewModel(data, filters, threshold);
+  }, [overview.data, cust, wh, cat, age, year, agedFrom, threshold]);
 
   const resetAll = (): void => {
     setCust(-1);
@@ -121,7 +124,7 @@ const OverviewView = () => {
         <Card zh="年度汇总" en="Annual Summary" note={`${usd(model.scoped.usd)} in total`}>
           <BarChart items={model.yearBars} picked={year} onPick={setYear} muted={model.noYearUsd} />
         </Card>
-        <Card zh="类别汇总" en="Category Summary" note={`${pct(model.noCatUsd, data.meta.totalUsd)} of total`}>
+        <Card zh="类别汇总" en="Category Summary" note={`${pct(model.noCatUsd, model.totalUsd)} of total`}>
           <BarChart items={model.catBars} picked={cat} onPick={setCat} muted={model.noCatUsd} />
         </Card>
       </div>
@@ -133,11 +136,11 @@ const OverviewView = () => {
       >
         <StoreKpis
           rows={model.storeRows}
-          meta={data.meta}
+          meta={model.meta}
           whSel={wh}
           onWh={setWh}
-          wip={data.wipSummary}
-          reserve={data.reserveSummary}
+          wip={'cube' in data ? data.wipSummary : null}
+          reserve={'cube' in data ? data.reserveSummary : null}
         />
       </Card>
 
@@ -171,9 +174,10 @@ const OverviewView = () => {
       >
         <PivotTable
           stores={model.pivotStores}
-          meta={data.meta}
+          meta={model.meta}
           axis={model.axis}
           span={monthSpan}
+          available={model.ledgerAvailable}
           wh={wh}
           cat={cat}
           cust={cust}
@@ -184,10 +188,11 @@ const OverviewView = () => {
       </Card>
 
       <DetailTable
-        meta={data.meta}
+        meta={model.meta}
         scope={scope}
         threshold={threshold}
-        scopeLines={Math.round(model.scoped.lines)}
+        scopeLines={model.scoped.lines == null ? null : Math.round(model.scoped.lines)}
+        available={'cube' in data}
         onClear={clearDimension}
         onResetAll={resetAll}
       />

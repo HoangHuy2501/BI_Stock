@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { StockDetailLine, StockMeta } from '@shared/api.interface';
+import type { StockDetailLine, OverviewMeta } from '@shared/api.interface';
 
 import { getStockErrorMessage } from '../../../../api/stock';
 import type { StockDetailQuery } from '../../../../api/stock';
@@ -22,10 +22,11 @@ interface DetailSort {
 const PAGE_SIZE = 12;
 
 interface DetailTableProps {
-  meta: StockMeta;
+  meta: OverviewMeta;
   scope: OverviewScope;
   threshold: number;
-  scopeLines: number;
+  scopeLines: number | null;
+  available?: boolean;
   onClear: (dimension: ScopeDimension) => void;
   onResetAll: () => void;
 }
@@ -69,7 +70,7 @@ const SortHeader = ({ label, sortKey, sort, onSort, className }: SortHeaderProps
   );
 };
 
-const DetailTable = ({ meta, scope, threshold, scopeLines, onClear, onResetAll }: DetailTableProps) => {
+const DetailTable = ({ meta, scope, threshold, scopeLines, available = true, onClear, onResetAll }: DetailTableProps) => {
   const [search, setSearch] = useState('');
   const [term, setTerm] = useState('');
   const [sort, setSort] = useState<DetailSort>({ key: 'usd', dir: 'desc' });
@@ -97,9 +98,9 @@ const DetailTable = ({ meta, scope, threshold, scopeLines, onClear, onResetAll }
     pageSize: PAGE_SIZE,
   };
 
-  const detail = useStockDetail(query);
+  const detail = useStockDetail(query, available);
 
-  const lines: StockDetailLine[] = detail.data?.items ?? [];
+  const lines: StockDetailLine[] = available ? detail.data?.items ?? [] : [];
   const total = detail.data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const safePage = Math.min(page, pages);
@@ -123,11 +124,11 @@ const DetailTable = ({ meta, scope, threshold, scopeLines, onClear, onResetAll }
       zh="库存明细"
       en="Stock Detail"
       headRight={
-        <DetailTools search={search} onSearch={setSearch} shown={total} total={scopeLines} />
+        <DetailTools search={search} onSearch={setSearch} shown={available ? total : null} total={scopeLines} />
       }
     >
       <ScopeChips meta={meta} scope={scope} onClear={onClear} onClearAll={clearAll} />
-      {detail.isPending ? <p className="card-sub">Loading stock lines…</p> : null}
+      {available && detail.isPending ? <p className="card-sub">Loading stock lines…</p> : null}
       <div className="detail-body">
         <div className="table-scroll">
           <table className="detail detail-wide">
@@ -147,6 +148,11 @@ const DetailTable = ({ meta, scope, threshold, scopeLines, onClear, onResetAll }
               </tr>
             </thead>
             <tbody>
+              {!available ? (
+                <tr className="row">
+                  {Array.from({ length: 11 }, (_, index) => <td key={index}>—</td>)}
+                </tr>
+              ) : null}
               {lines.map((line: StockDetailLine) => {
                 const aged = line.ageDays > threshold;
                 const warehouse = meta.warehouses[line.warehouseIdx];
@@ -190,7 +196,7 @@ const DetailTable = ({ meta, scope, threshold, scopeLines, onClear, onResetAll }
           </table>
         </div>
 
-        {detail.isError ? (
+        {available && detail.isError ? (
           <div className="empty">
             <h3>Stock lines could not be loaded</h3>
             <p>{getStockErrorMessage(detail.error, 'The detail register request failed.')}</p>
@@ -205,7 +211,7 @@ const DetailTable = ({ meta, scope, threshold, scopeLines, onClear, onResetAll }
           </div>
         ) : null}
 
-        {!detail.isError && detail.data && total === 0 ? (
+        {available && !detail.isError && detail.data && total === 0 ? (
           <div className="empty">
             <h3>No lines in this scope</h3>
             <p>The current filters and search exclude every listed line. Widen the scope or clear the search.</p>
@@ -217,7 +223,7 @@ const DetailTable = ({ meta, scope, threshold, scopeLines, onClear, onResetAll }
 
         <div className="pager">
           <span className="pager-info">
-            Page {safePage} of {pages} · showing {from}–{to} of {num(total)}
+            Page {available ? safePage : '—'} of {available ? pages : '—'} · showing {available ? from : '—'}–{available ? to : '—'} of {num(available ? total : null)}
           </span>
           <div className="pager-btns">
             <button

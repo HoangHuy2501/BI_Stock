@@ -336,3 +336,46 @@ export interface StockCacheRefreshResponse {
   refreshed: StockCacheMeta[];
   failures: { key: StockCacheKey; message: string }[];
 }
+
+
+/* The SQL API returns summaries, not the original stock cube. Missing values
+ * stay null; these contracts do not replace the original cube contract. */
+export interface StockSummaryItem {
+  yearIdx?: number | string;
+  categoryIdx?: number | string;
+  warehouseIdx?: number | string;
+  customerIdx?: number | string;
+  year?: number | string | null;
+  nameZh?: string | null;
+  nameEn?: string | null;
+  name?: string | null;
+  usd?: number | null;
+  agedUsd?: number | null;
+}
+
+export interface OverviewLedgerItem {
+  warehouseName: string | null;
+  categoryName: string | null;
+  customerName: string | null;
+  month: string | null;
+  qty: number | null;
+  usd: number | null;
+}
+
+export interface StockSummaryResponse {
+  annualSummary?: { items?: StockSummaryItem[] | null; totalUsd?: number | null } | null;
+  categorySummary?: { items?: StockSummaryItem[] | null; totalUsd?: number | null } | null;
+  warehouseSummary?: { items?: StockSummaryItem[] | null } | null;
+  buyerRank?: { items?: StockSummaryItem[] | null } | null;
+  agedRank?: { thresholdDays?: number | null; items?: StockSummaryItem[] | null } | null;
+  monthWarehouseLedger?: OverviewLedgerItem[] | null;
+  monthWarehouseLedge?: OverviewLedgerItem[] | null;
+}
+
+export type StockOverviewData = StockOverviewResponse | StockSummaryResponse;
+export interface StockOverviewApiResponse {
+  success: boolean;
+  message?: string;
+  data: StockOverviewData | null;
+}
+export type OverviewMeta = Pick<StockMeta, 'warehouses' | 'categories' | 'customers' | 'years'>;

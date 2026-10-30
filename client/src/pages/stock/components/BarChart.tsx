@@ -4,7 +4,7 @@ export interface BarItem {
   key: number;
   label: string;
   en?: string | null;
-  value: number;
+  value: number | null;
   color?: string;
 }
 
@@ -12,13 +12,13 @@ interface BarChartProps {
   items: BarItem[];
   picked: number;
   onPick: (key: number) => void;
-  muted: number;
+  muted: number | null;
 }
 
 const TICKS = [0, 0.25, 0.5, 0.75, 1];
 
 const BarChart = ({ items, picked, onPick, muted }: BarChartProps) => {
-  const max = items.reduce((current: number, item: BarItem) => Math.max(current, item.value), 1);
+  const max = items.reduce((current: number, item: BarItem) => Math.max(current, item.value ?? 0), 1);
   const top = max * 1.2;
 
   return (
@@ -35,8 +35,9 @@ const BarChart = ({ items, picked, onPick, muted }: BarChartProps) => {
             </div>
           ))}
           <div className="chart-bars">
+            {items.length === 0 ? <span className="bar-val">—</span> : null}
             {items.map((item: BarItem) => {
-              const height = Math.max((item.value / top) * 100, 0.4);
+              const height = item.value == null ? 0 : Math.max((item.value / top) * 100, 0.4);
               const on = picked === item.key;
               const dim = picked >= 0 && !on;
               return (
