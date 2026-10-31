@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import type { ReserveDataset, StockDetailLine } from '@shared/api.interface';
+import type { ReserveDataset, ReserveRegisterLine } from '@shared/api.interface';
 
 import { getStockErrorMessage } from '../../../api/stock';
 import Card from '../components/Card';
@@ -28,7 +28,7 @@ const ReserveView = () => {
 
   const dataset: ReserveDataset | null = data ? data.data : null;
 
-  const rows = useMemo<StockDetailLine[]>(
+  const rows = useMemo<ReserveRegisterLine[]>(
     () => (dataset ? filterReserveRows(dataset, focus) : []),
     [dataset, focus],
   );
@@ -39,7 +39,8 @@ const ReserveView = () => {
   );
   const focusKey = useMemo<string>(() => focusKeyOf(chips), [chips]);
 
-  const pick = (dim: ReserveDim, value: number) => setFocus((prev: ReserveFocus) => toggleFocus(prev, dim, value));
+  const pick = (dim: ReserveDim, value: number | string) =>
+    setFocus((prev: ReserveFocus) => toggleFocus(prev, dim, value));
   const clearFocus = () => setFocus(EMPTY_FOCUS);
 
   if (isLoading || (!dataset && !error)) {

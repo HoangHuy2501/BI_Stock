@@ -245,6 +245,20 @@ export interface ReserveBuyer {
   lines: number;
 }
 
+export interface ReserveRegisterLine {
+  id: string;
+  itemName: string | null;
+  categoryName: string | null;
+  goodsNo: string | null;
+  batchNo: string | null;
+  lotDate: string | null;
+  buyer: string | null;
+  reasonDl: string | null;
+  ageBand: string | null;
+  ageMonths: number | null;
+  usd: number;
+}
+
 export interface ReserveDataset {
   warehouseIdx: number;
   nameZh: string;
@@ -261,8 +275,8 @@ export interface ReserveDataset {
   oldestLines: number;
   oldestBandIndex: number;
   buyers: ReserveBuyer[];
-  bandBuyers: ReserveBuyer[][];
-  rows: StockDetailLine[];
+  bandBuyers?: ReserveBuyer[][];
+  rows: ReserveRegisterLine[];
 }
 
 export type StockCacheOrigin = 'upstream' | 'snapshot';
