@@ -2,13 +2,15 @@
 const { getPool, sql } = require('../config/connectData')
 const pagination = require('../utils/Pagination')
 class StockRepository {
-    async AnnualSummary() {
+    async AnnualSummary(warehouse) {
         try {
             const pool = await getPool();
-            const result = await pool.request().query(`
+            const result = await pool.request()
+                .input("warehouse", sql.NVarChar, warehouse?.trim() || null)
+                .query(`
                 select CAST(ROW_NUMBER() OVER (ORDER BY year(made_lot_date)) - 1 AS INT) AS yearIdx, year(made_lot_date) as year , 
                     round(sum(end_usd), 0) as usd
-                    from bi_stock 
+                    from bi_stock where @warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%'
                     group by year(made_lot_date)
                     order by year(made_lot_date) asc
                 `)
@@ -18,13 +20,15 @@ class StockRepository {
         }
     }
 
-    async CategorySummary() {
+    async CategorySummary(warehouse) {
         try {
             const pool = await getPool();
-            const result = await pool.request().query(`
+            const result = await pool.request()
+                .input("warehouse", sql.NVarChar, warehouse?.trim() || null)
+                .query(`
                 select CAST(ROW_NUMBER() OVER (ORDER BY goods_type_desc) - 1 AS INT) AS categoryIdx, goods_type_desc as nameZh, 
                     round(sum(end_usd),0) as usd
-                    from bi_stock
+                    from bi_stock where @warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%'
                     group by goods_type_desc
                 `)
             return result.recordset;
@@ -57,14 +61,16 @@ class StockRepository {
             throw error
         }
     }
-    async BuyerRank() {
+    async BuyerRank(warehouse) {
         try {
             const pool = await getPool();
-            const result = await pool.request().query(`
+            const result = await pool.request()
+                .input("warehouse", sql.NVarChar, warehouse?.trim() || null)
+                .query(`
                 select CAST (ROW_NUMBER() OVER (ORDER BY cust_name) - 1 AS INT) AS customerIdx,
                         isnull(cust_name, '-') AS name,
                         round(sum(end_usd),0) as usd
-                        from bi_stock
+                        from bi_stock where @warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%'
                         group by cust_name
                         order by usd desc
                 `)
@@ -74,15 +80,17 @@ class StockRepository {
         }
     }
 
-    async AgedRank() {
+    async AgedRank(warehouse) {
         try {
             const pool = await getPool();
-            const result = await pool.request().query(`
+            const result = await pool.request()
+                .input("warehouse", sql.NVarChar, warehouse?.trim() || null)
+                .query(`
                 select CAST (ROW_NUMBER() OVER (ORDER BY effect_no) - 1 AS INT) AS categoryIdx,
                     effect_no as nameZh, 
                     round(sum(end_usd),0) as agedUsd
                     from bi_stock
-                    where datediff(day, made_lot_date, GETDATE()) > 90
+                    where datediff(day, made_lot_date, GETDATE()) > 90 AND (@warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%')
                     group by effect_no
                     order by agedUsd desc
                 `)
@@ -137,7 +145,8 @@ class StockRepository {
             const {
                 page,
                 pageSize,
-                item
+                item,
+                warehouse,
             } = filter
             const query = `SELECT
                 goods_name AS item,
@@ -158,19 +167,20 @@ class StockRepository {
                 unit_no
             FROM bi_stock
             where 
-            @item IS NULL
+            (@item IS NULL
                 OR (
                     made_lot LIKE '%' + @item + '%'
                     OR goods_no LIKE '%' + @item + '%'
                     OR goods_name LIKE '%' + @item + '%'
                     OR cust_name LIKE '%' + @item + '%'
                     OR st_name LIKE '%' + @item + '%'
-                );
+        )) AND (@warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%');
         `
             return pagination({
                 query,
                 params: {
                     item: item?.trim() || null,
+                    warehouse: warehouse?.trim() || null,
                 },
                 page,
                 pageSize,
