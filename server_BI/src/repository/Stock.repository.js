@@ -137,11 +137,7 @@ class StockRepository {
             const {
                 page,
                 pageSize,
-                lot,
-                code,
-                item,
-                buyer,
-                warehouse,
+                item
             } = filter
             const query = `SELECT
                 goods_name AS item,
@@ -162,20 +158,19 @@ class StockRepository {
                 unit_no
             FROM bi_stock
             where 
-            (@lot IS NULL OR made_lot LIKE '%' + @lot + '%')
-            AND (@code IS NULL OR goods_no LIKE '%' + @code + '%')
-            AND (@item IS NULL OR goods_name LIKE '%' + @item + '%')
-            AND (@buyer IS NULL OR cust_name LIKE '%' + @buyer + '%')
-            AND (@warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%');
+            @item IS NULL
+                OR (
+                    made_lot LIKE '%' + @item + '%'
+                    OR goods_no LIKE '%' + @item + '%'
+                    OR goods_name LIKE '%' + @item + '%'
+                    OR cust_name LIKE '%' + @item + '%'
+                    OR st_name LIKE '%' + @item + '%'
+                );
         `
             return pagination({
                 query,
                 params: {
-                    lot: lot?.trim() || null,
-                    code: code?.trim() || null,
                     item: item?.trim() || null,
-                    buyer: buyer?.trim() || null,
-                    warehouse: warehouse?.trim() || null
                 },
                 page,
                 pageSize,
