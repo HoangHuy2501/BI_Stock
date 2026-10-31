@@ -8,25 +8,31 @@ import type {
   StockCacheKey,
   StockCacheRefreshResponse,
   StockDetailResponse,
+  StockDetailLine,
   StockOverviewData,
   StockOverviewApiResponse,
   StockSourceStatusResponse,
   WipDatasetResponse,
   WipTag,
   WipTagUpdateRequest,
-} from '@shared/api.interface';
+} from "@shared/api.interface";
 
 export interface StockDetailQuery {
-  cust?: number;
-  wh?: number;
-  cat?: number;
-  age?: number;
+  warehouse?: string;
+  category?: string;
+  customer?: string;
   year?: string;
+  ageMin?: number;
+  ageMax?: number;
   q?: string;
-  sort?: 'usd' | 'age' | 'qty';
-  dir?: 'asc' | 'desc';
+  sort?: "usd" | "age" | "qty";
+  dir?: "asc" | "desc";
   page?: number;
   pageSize?: number;
+  item?: string;
+  buyer?: string;
+  code?: string;
+  lot?: string;
 }
 
 interface ApiErrorBody {
@@ -37,11 +43,16 @@ interface ApiErrorBody {
   };
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(
+  /\/$/,
+  "",
+);
 const url = (path: string): string => `${API_BASE_URL}${path}`;
 
 const apiError = (status: number, body: ApiErrorBody | null): Error => {
-  const error = new Error(body?.error?.message || `Request failed with status ${status}`);
+  const error = new Error(
+    body?.error?.message || `Request failed with status ${status}`,
+  );
   return Object.assign(error, { response: { status, data: body } });
 };
 
@@ -55,24 +66,31 @@ const readBody = async (response: Response): Promise<ApiErrorBody | null> => {
   }
 };
 
-const requestGet = async <T>(path: string, params?: Record<string, unknown>): Promise<T> => {
+const requestGet = async <T>(
+  path: string,
+  params?: Record<string, unknown>,
+): Promise<T> => {
   const search = new URLSearchParams();
   Object.entries(params ?? {}).forEach(([key, value]: [string, unknown]) => {
-    if (value === undefined || value === null || value === '') return;
+    if (value === undefined || value === null || value === "") return;
     search.set(key, String(value));
   });
   const query = search.toString();
   const response = await fetch(url(query ? `${path}?${query}` : path), {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: "application/json" },
   });
   if (!response.ok) throw apiError(response.status, await readBody(response));
   return (await response.json()) as T;
 };
 
-const requestWrite = async <T>(method: 'POST' | 'PUT', path: string, body: unknown): Promise<T> => {
+const requestWrite = async <T>(
+  method: "POST" | "PUT",
+  path: string,
+  body: unknown,
+): Promise<T> => {
   const response = await fetch(url(path), {
     method,
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(body ?? {}),
   });
   if (!response.ok) throw apiError(response.status, await readBody(response));
@@ -83,7 +101,10 @@ interface ApiErrorLike {
   response?: { status?: number; data?: ApiErrorBody };
 }
 
-export const getStockErrorMessage = (error: unknown, fallback: string): string => {
+export const getStockErrorMessage = (
+  error: unknown,
+  fallback: string,
+): string => {
   const candidate = error as ApiErrorLike | null;
   const payload = candidate?.response?.data?.error;
   if (payload?.message) return payload.message;
@@ -96,31 +117,126 @@ export const getStockErrorMessage = (error: unknown, fallback: string): string =
   return fallback;
 };
 
+interface DetailRow {
+  item: string | null;
+  code: string | null;
+  lot_batch: string | null;
+  date: string | null;
+  warehouse: string | null;
+  mo_no: string | null;
+  cust_style: string | null;
+  buyer: string | null;
+  category: string | null;
+  rem: string | null;
+  pmc_rem: string | null;
+  reason: string | null;
+  age_days: number | null;
+  end_qty: number | null;
+  end_usd: number | null;
+}
+
+const toDetailLine = (row: DetailRow, index: number): StockDetailLine => ({
+  id: `${row.code ?? ""}|${row.lot_batch ?? ""}|${row.mo_no ?? ""}|${index}`,
+  goodsNo: row.code ?? "",
+  itemName: row.item ?? "",
+  categoryIdx: -1,
+  categoryZh: row.category ?? "",
+  categoryEn: "",
+  customerIdx: -1,
+  customerName: row.buyer ?? "-",
+  warehouseIdx: -1,
+  warehouseZh: row.warehouse ?? "",
+  warehouseEn: "",
+  qty: row.end_qty ?? 0,
+  unit: "",
+  usd: row.end_usd ?? 0,
+  ageDays: row.age_days ?? 0,
+  batchNo: row.lot_batch ?? "",
+  lotDate: row.date ? String(row.date).slice(0, 10) : null,
+  reasonWh: row.reason ?? "",
+  reasonDl: "",
+  moNo: row.mo_no,
+  custStyle: row.cust_style,
+  rem: row.rem,
+  pmcRem: row.pmc_rem,
+});
+
+interface DetailPayload {
+  data?: {
+    data?: DetailRow[];
+    pagination?: {
+      page?: number;
+      pageSize?: number;
+      totalItems?: number;
+      totalPages?: number;
+    };
+  };
+}
+
+const toDetailResponse = (
+  raw: unknown,
+  page: number,
+  pageSize: number,
+): StockDetailResponse => {
+  const payload = (raw ?? {}) as DetailPayload;
+  const rows: DetailRow[] = payload.data?.data ?? [];
+  const pg = payload.data?.pagination;
+  const offset = (page - 1) * pageSize;
+  return {
+    items: rows.map((row: DetailRow, i: number) =>
+      toDetailLine(row, offset + i),
+    ),
+    total: Number(pg?.totalItems ?? rows.length),
+    page: Number(pg?.page ?? page),
+    pageSize: Number(pg?.pageSize ?? pageSize),
+  };
+};
+
 export const stockApi = {
   overview: async (): Promise<StockOverviewData> => {
-    const response = await requestGet<StockOverviewData | StockOverviewApiResponse>('/api/stock/overview');
-    if ('success' in response) {
+    const response = await requestGet<
+      StockOverviewData | StockOverviewApiResponse
+    >("/api/stock/overview");
+    if ("success" in response) {
       if (!response.success || !response.data) {
-        throw new Error(response.message || 'Could not load overview');
+        throw new Error(response.message || "Could not load overview");
       }
       return response.data;
     }
     return response;
   },
 
-  detail: (query: StockDetailQuery): Promise<StockDetailResponse> =>
-    requestGet<StockDetailResponse>('/api/stock/detail', { ...query }),
+  detail: async (query: StockDetailQuery): Promise<StockDetailResponse> => {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 12;
+    const raw = await requestGet<unknown>("/api/stock/detail", {
+      page,
+      pageSize,
+      item: query.item,
+      code: query.code,
+      lot: query.lot,
+      buyer: query.buyer,
+      warehouse: query.warehouse,
+    });
+    return toDetailResponse(raw, page, pageSize);
+  },
 
-  wip: (): Promise<WipDatasetResponse> => requestGet<WipDatasetResponse>('/api/stock/wip'),
+  wip: (): Promise<WipDatasetResponse> =>
+    requestGet<WipDatasetResponse>("/api/stock/wip"),
 
-  reserve: (): Promise<ReserveDatasetResponse> => requestGet<ReserveDatasetResponse>('/api/stock/reserve'),
+  reserve: (): Promise<ReserveDatasetResponse> =>
+    requestGet<ReserveDatasetResponse>("/api/stock/reserve"),
 
   sourceStatus: (): Promise<StockSourceStatusResponse> =>
-    requestGet<StockSourceStatusResponse>('/api/stock/source/status'),
+    requestGet<StockSourceStatusResponse>("/api/stock/source/status"),
 
   refreshCache: (keys?: StockCacheKey[]): Promise<StockCacheRefreshResponse> =>
-    requestWrite<StockCacheRefreshResponse>('POST', '/api/stock/cache/refresh', keys ? { keys } : {}),
+    requestWrite<StockCacheRefreshResponse>(
+      "POST",
+      "/api/stock/cache/refresh",
+      keys ? { keys } : {},
+    ),
 
   updateWipTag: (lotId: string, body: WipTagUpdateRequest): Promise<WipTag> =>
-    requestWrite<WipTag>('PUT', `/api/stock/wip/lots/${lotId}/tag`, body),
+    requestWrite<WipTag>("PUT", `/api/stock/wip/lots/${lotId}/tag`, body),
 };

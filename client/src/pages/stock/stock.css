@@ -82,6 +82,7 @@ button, input, select { font-family: inherit; }
 
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.row-2.row-1-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
 
 .num { font-variant-numeric: tabular-nums; }
 
@@ -730,7 +731,7 @@ table.detail thead th {
   z-index: 2;
   background: #f9fafb;
   color: var(--ink-3);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 10.5px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -757,7 +758,11 @@ table.detail tbody tr.row { cursor: default; }
 table.detail tbody tr.row:hover td { background: #fafbfd; }
 table.detail td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
-table.detail.detail-wide { min-width: 1340px; }
+table.detail.detail-wide {
+  table-layout: fixed;
+  width: 2000px;
+  min-width: 2000px;
+}
 table.detail td.mono-cell {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11.5px;
@@ -765,6 +770,22 @@ table.detail td.mono-cell {
   color: var(--ink-3);
   white-space: nowrap;
 }
+
+/* detail table: horizontal scroll */
+.detail-body .table-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #c3cad6 transparent;
+}
+.detail-body .table-scroll::-webkit-scrollbar { height: 8px; }
+.detail-body .table-scroll::-webkit-scrollbar-thumb { background: #c3cad6; border-radius: 4px; }
+.detail-body .table-scroll::-webkit-scrollbar-thumb:hover { background: #a9b2c2; }
+
+/* 15 columns: wide enough that nothing is squeezed */
+table.detail.detail-wide { min-width: 2000px; }
+
 table.detail td.nowrap { white-space: nowrap; }
 table.detail td.cat-cell2 { font-size: 11px; color: var(--ink-2); white-space: nowrap; }
 table.detail td.reason-cell {
@@ -878,7 +899,7 @@ table.detail td.reason-cell {
 
 @media (max-width: 860px) {
   :root { --gutter: 16px; }
-  .row-2, .row-3 { grid-template-columns: 1fr; }
+  .row-2, .row-3, .row-2.row-1-2 { grid-template-columns: 1fr; }
   .row-3 > :last-child { grid-column: auto; }
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pagehead { flex-direction: column; align-items: flex-start; gap: 8px; }
