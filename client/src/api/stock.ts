@@ -237,6 +237,12 @@ export const stockApi = {
       keys ? { keys } : {},
     ),
 
-  updateWipTag: (lotId: string, body: WipTagUpdateRequest): Promise<WipTag> =>
-    requestWrite<WipTag>("PUT", `/api/stock/wip/lots/${lotId}/tag`, body),
+  updateWipTag: (lotId: string, body: WipTagUpdateRequest): Promise<WipTag> => {
+    console.log("📤 Body gửi lên API:", body);
+    return requestWrite<WipTag>(
+      "PUT",
+      `/api/stock/wip/lots/${encodeURIComponent(lotId)}/tag`,
+      body,
+    );
+  },
 };

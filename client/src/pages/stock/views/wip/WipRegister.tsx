@@ -105,9 +105,27 @@ const WipRegister = ({
   const shown: WipLotItem[] = view.slice(current * PAGE_SIZE, to);
   const hidden: boolean = lots.length === 0;
 
-  const handleCause = (lotId: string, event: ChangeEvent<HTMLSelectElement>): void => {
-    const value: string = event.target.value;
-    onTagChange(lotId, { cause: value === '' ? null : value });
+  const handleCause = (
+    lot: WipLotItem,
+    event: ChangeEvent<HTMLSelectElement>
+  ): void => {
+    const value = event.target.value;
+
+    const selectedCause = WIP_CAUSES.find(
+      (cause: CauseMeta) => cause.key === value
+    );
+
+    const reason = selectedCause
+      ? `${selectedCause.zh} · ${selectedCause.name}`
+      : null;
+
+    onTagChange(lot.id, {
+      cause: value || null,
+      made_lot: lot.made_lot,
+      moNo: lot.moNo,
+      goodsNo: lot.goodsNo,
+      reason,
+    });
   };
 
   return (
@@ -193,7 +211,7 @@ const WipRegister = ({
             <tr>
               <th>Days</th>
               <th>Lot date</th>
-              <th>MO No.</th> 
+              <th>MO No.</th>
               <th>Item</th>
               <th>Buyer</th>
               <th className="r">Qty</th>
@@ -235,7 +253,7 @@ const WipRegister = ({
                       aria-label={`Cause of red for ${lot.goodsNo}`}
                       aria-busy={busy}
                       disabled={busy}
-                      onChange={(event: ChangeEvent<HTMLSelectElement>) => handleCause(lot.id, event)}
+                      onChange={(event: ChangeEvent<HTMLSelectElement>) => handleCause(lot, event)}
                     >
                       <option value="">— select —</option>
                       {WIP_CAUSES.map((cause: CauseMeta) => (

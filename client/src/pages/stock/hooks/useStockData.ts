@@ -36,7 +36,14 @@ export const useUpdateWipTag = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: { lotId: string } & WipTagUpdateRequest) =>
-      stockApi.updateWipTag(payload.lotId, { cause: payload.cause, blueFlag: payload.blueFlag }),
+      stockApi.updateWipTag(payload.lotId, {
+        cause: payload.cause,
+        blueFlag: payload.blueFlag,
+        made_lot: payload.made_lot,
+        moNo: payload.moNo,
+        goodsNo: payload.goodsNo,
+        reason: payload.reason,
+      }),
     retry: false,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: stockKeys.wip }),
   });

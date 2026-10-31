@@ -5,7 +5,7 @@ const ApiSuccess = require('../utils/ApiSuccess')
 
 exports.GetOverview = async (req, res, next) => {
     try {
-        // const monthWarehouseLedger = await StockService.monthWarehouseLedge()
+        const warehouse = req.query.warehouse;
         const [
             annualSummary,
             categorySummary,
@@ -14,11 +14,11 @@ exports.GetOverview = async (req, res, next) => {
             agedRank,
             monthWarehouseLedger
         ] = await Promise.all([
-            StockService.AnnualSummary(),
-            StockService.CategorySummary(),
+            StockService.AnnualSummary(warehouse),
+            StockService.CategorySummary(warehouse),
             StockService.WarehouseSummary(),
-            StockService.BuyerRank(),
-            StockService.AgedRank(),
+            StockService.BuyerRank(warehouse),
+            StockService.AgedRank(warehouse),
             StockService.monthWarehouseLedge(),
         ])
 
@@ -38,6 +38,7 @@ exports.GetDetail = async (req, res, next) => {
     try {
         const data = {
             item: req.query.item,
+            warehouse: req.query.warehouse,
             page: Number(req.query.page ?? 1),
             pageSize: Number(req.query.pageSize ?? 25)
         };

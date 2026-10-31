@@ -1,9 +1,9 @@
 
 const StockRepository = require('../repository/Stock.repository')
 class StockService {
-    async AnnualSummary() {
+    async AnnualSummary(warehouse) {
         try {
-            const items = await StockRepository.AnnualSummary();
+            const items = await StockRepository.AnnualSummary(warehouse);
             let totalUsd = 0
             items.forEach(element => {
                 totalUsd += element.usd
