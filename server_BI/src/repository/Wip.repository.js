@@ -109,6 +109,7 @@ class WipRepository {
                     s.goods_no,
                     s.goods_name,
                     s.mo_no,
+                    s.made_lot,
                     COALESCE(
                         NULLIF(LTRIM(RTRIM(s.cust_name)), N''),
                         N'-'
@@ -128,6 +129,62 @@ class WipRepository {
                 ORDER BY days DESC, usd DESC;
                 `)
             return result.recordset;
+        } catch (error) {
+            throw error
+        }
+    }
+
+    // update reason
+    async UpdateReason(data) {
+        try {
+            const {
+                made_lot,
+                mo_no,
+                goods_no,
+                reason_dl
+            } = data;
+            const pool = await getPool();
+            const result = await pool.request()
+                .input('goods_no', sql.NVarChar, goods_no)
+                .input('made_lot', sql.NVarChar, made_lot ?? null)
+                .input('mo_no', sql.NVarChar, mo_no)
+                .input('reason_dl', sql.NVarChar, reason_dl)
+                .query(`
+                --Khi người dùng chọn nguyên nhân
+            SET XACT_ABORT ON;
+
+            BEGIN TRY
+                BEGIN TRANSACTION;
+
+                UPDATE dbo.bi_stock_reason WITH (UPDLOCK, HOLDLOCK)
+                SET reason_dl = @reason_dl,
+                    updated_at = GETDATE()
+                WHERE goods_no = @goods_no
+                AND (
+                    (@made_lot IS NOT NULL AND made_lot = @made_lot)
+                    OR
+                    (@made_lot IS NULL AND made_lot IS NULL AND mo_no = @mo_no)
+                );
+
+                IF @@ROWCOUNT = 0
+                BEGIN
+                    INSERT INTO dbo.bi_stock_reason
+                        (goods_no, made_lot, mo_no, reason_dl, is_mark, updated_at)
+                    VALUES
+                        (@goods_no, @made_lot, @mo_no, @reason_dl, 0, GETDATE());
+                END;
+
+                COMMIT TRANSACTION;
+            END TRY
+            BEGIN CATCH
+                IF @@TRANCOUNT > 0
+                    ROLLBACK TRANSACTION;
+
+                THROW;
+            END CATCH;
+
+                `)
+            return result.rowsAffected;
         } catch (error) {
             throw error
         }
