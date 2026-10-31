@@ -136,11 +136,22 @@ class WipServices {
                     cause: null,
                     blueFlag: false,
 
-                    moNo: item.mo_no ?? null
+                    moNo: item.mo_no ?? null,
+                    made_lot: item.made_lot ?? null
                 };
             });
 
             return lots;
+        } catch (error) {
+            throw error
+        }
+    }
+
+    // update reason
+    async UpdateReason(data) {
+        try {
+            const result = await WipRepository.UpdateReason(data);
+            return result
         } catch (error) {
             throw error
         }

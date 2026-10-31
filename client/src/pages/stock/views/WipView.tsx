@@ -89,7 +89,15 @@ const WipView = () => {
     setTagError(null);
 
     updateTag.mutate(
-      { lotId, cause: next.cause, blueFlag: next.blueFlag },
+      {
+        lotId,
+        cause: next.cause,
+        blueFlag: next.blueFlag,
+        made_lot: patch.made_lot,
+        moNo: patch.moNo,
+        goodsNo: patch.goodsNo,
+        reason: patch.reason,
+      },
       {
         onError: (error: unknown) => {
           setTags((current: LotTagMap) => ({ ...current, [lotId]: previous }));
