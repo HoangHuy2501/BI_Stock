@@ -120,7 +120,8 @@ const OverviewView = () => {
 
   return (
     <main className="wrap stack">
-      <div className="row-2">
+      {/* row-1-2 */}
+      <div className="row-2"> 
         <Card zh="年度汇总" en="Annual Summary" note={`${usd(model.scoped.usd)} in total`}>
           <BarChart items={model.yearBars} picked={year} onPick={setYear} muted={model.noYearUsd} />
         </Card>
@@ -192,7 +193,7 @@ const OverviewView = () => {
         scope={scope}
         threshold={threshold}
         scopeLines={model.scoped.lines == null ? null : Math.round(model.scoped.lines)}
-        available={'cube' in data}
+        available={true}
         onClear={clearDimension}
         onResetAll={resetAll}
       />

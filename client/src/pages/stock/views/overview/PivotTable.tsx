@@ -75,6 +75,7 @@ const PivotTable = ({ stores, meta, axis, span, available = true, wh, cat, cust,
   const flat = useMemo<FlatRow[]>(() => {
     const out: FlatRow[] = [];
     stores.forEach((store: PivotStore) => {
+      if (wh >= 0 && store.idx !== wh) return;
       store.cats.forEach((category) => {
         category.buyers.forEach((buyer) => {
           out.push({
@@ -135,7 +136,7 @@ const PivotTable = ({ stores, meta, axis, span, available = true, wh, cat, cust,
 
   useEffect(() => {
     setPage(0);
-  }, [span, pageSize, stores]);
+  }, [span, pageSize, stores, wh]);
 
   const jump = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();

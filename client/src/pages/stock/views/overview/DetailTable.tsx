@@ -11,8 +11,18 @@ import { storeStyle } from "../../lib/store";
 import DetailTools from "./DetailTools";
 import ScopeChips from "./ScopeChips";
 import type { OverviewScope, ScopeDimension } from "./scope";
+import { STOCK_AGE_BOUNDS } from "@shared/api.interface";
 
 type SortKey = "usd" | "age" | "qty";
+
+type SearchBy = "item" | "code" | "lot" | "buyer";
+
+const SEARCH_FIELDS: { key: SearchBy; label: string }[] = [
+  { key: "item", label: "Item 物料" },
+  { key: "code", label: "Code 编码" },
+  { key: "lot", label: "Lot / batch 批次" },
+  { key: "buyer", label: "Buyer 客户" },
+];
 
 interface DetailSort {
   key: SortKey;
@@ -76,6 +86,15 @@ const SortHeader = ({
   );
 };
 
+/* 1 2 3 … 2543 : trang đầu, trang cuối và vài trang quanh trang hiện tại */
+const buildPages = (pages: number, current: number): (number | "…")[] => {
+  if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "…", pages];
+  if (current >= pages - 3)
+    return [1, "…", pages - 4, pages - 3, pages - 2, pages - 1, pages];
+  return [1, "…", current - 1, current, current + 1, "…", pages];
+};
+
 const DetailTable = ({
   meta,
   scope,
@@ -86,6 +105,7 @@ const DetailTable = ({
   onResetAll,
 }: DetailTableProps) => {
   const [search, setSearch] = useState("");
+  const [searchBy, setSearchBy] = useState<SearchBy>("item");
   const [term, setTerm] = useState("");
   const [sort, setSort] = useState<DetailSort>({ key: "usd", dir: "desc" });
   const [page, setPage] = useState(1);
@@ -104,17 +124,28 @@ const DetailTable = ({
     scope.age,
     scope.year,
     term,
+    searchBy,
     sort.key,
     sort.dir,
   ]);
 
+  const whItem = scope.wh >= 0 ? meta.warehouses[scope.wh] : undefined;
+  const catItem = scope.cat >= 0 ? meta.categories[scope.cat] : undefined;
+  const ageBound = scope.age >= 0 ? STOCK_AGE_BOUNDS[scope.age] : undefined;
+
+  const clickedBuyer = scope.cust >= 0 ? meta.customers[scope.cust] : undefined;
+
   const query: StockDetailQuery = {
-    cust: scope.cust >= 0 ? scope.cust : undefined,
-    wh: scope.wh >= 0 ? scope.wh : undefined,
-    cat: scope.cat >= 0 ? scope.cat : undefined,
-    age: scope.age >= 0 ? scope.age : undefined,
+    item: searchBy === "item" ? term || undefined : undefined,
+    code: searchBy === "code" ? term || undefined : undefined,
+    lot: searchBy === "lot" ? term || undefined : undefined,
+    // gõ trong ô tìm Buyer thì ưu tiên từ khóa, nếu không thì dùng buyer đã click
+    buyer: searchBy === "buyer" && term ? term : clickedBuyer,
+    warehouse: whItem ? whItem.rawName || whItem.nameZh : undefined,
+    category: catItem?.nameZh,
     year: scope.year >= 0 ? meta.years[scope.year] : undefined,
-    q: term || undefined,
+    ageMin: ageBound?.[0],
+    ageMax: ageBound?.[1],
     sort: sort.key,
     dir: sort.dir,
     page,
@@ -149,12 +180,14 @@ const DetailTable = ({
       zh="库存明细"
       en="Stock Detail"
       headRight={
-        <DetailTools
-          search={search}
-          onSearch={setSearch}
-          shown={available ? total : null}
-          total={scopeLines}
-        />
+        <>
+          <DetailTools
+            search={search}
+            onSearch={setSearch}
+            shown={available ? total : null}
+            total={scopeLines}
+          />
+        </>
       }
     >
       <ScopeChips
@@ -169,9 +202,26 @@ const DetailTable = ({
       <div className="detail-body">
         <div className="table-scroll">
           <table className="detail detail-wide">
+            <colgroup>
+              <col style={{ width: 400 }} /> {/* Item */}
+              <col style={{ width: 130 }} /> {/* Code */}
+              <col style={{ width: 150 }} /> {/* Lot / batch */}
+              <col style={{ width: 100 }} /> {/* Date */}
+              <col style={{ width: 190 }} /> {/* Warehouse */}
+              <col style={{ width: 110 }} /> {/* MO No. */}
+              <col style={{ width: 170 }} /> {/* Style */}
+              <col style={{ width: 120 }} /> {/* Buyer */}
+              <col style={{ width: 110 }} /> {/* Category */}
+              <col style={{ width: 180 }} /> {/* Stock Remark */}
+              <col style={{ width: 180 }} /> {/* PMC Remark */}
+              <col style={{ width: 160 }} /> {/* Reason */}
+              <col style={{ width: 60 }} /> {/* Age */}
+              <col style={{ width: 80 }} /> {/* Qty */}
+              <col style={{ width: 100 }} /> {/* Value */}
+            </colgroup>
             <thead>
               <tr>
-                <th style={{ width: "24%" }}>Item 物料</th>
+                <th style={{ maxWidth: 240 }}>Item 物料</th>
                 <th>Code 编码</th>
                 <th>Lot / batch 批次</th>
                 <th className="nowrap">Date</th>
@@ -230,7 +280,7 @@ const DetailTable = ({
                     </td>
                     <td className="mono-cell">{line.goodsNo}</td>
                     <td className="mono-cell">{line.batchNo || "—"}</td>
-                    <td className="nowrap">{line.lotDate || "—"}</td>
+                    <td className="mono-cell">{line.lotDate || "—"}</td>
                     <td>
                       <span className="wh-cell">
                         <span
@@ -356,9 +406,23 @@ const DetailTable = ({
             >
               ‹
             </button>
-            <span className="page-btn current" aria-current="page">
-              {safePage}
-            </span>
+            {buildPages(pages, safePage).map((entry, index) =>
+              entry === "…" ? (
+                <span className="page-gap" key={`gap-${index}`}>
+                  …
+                </span>
+              ) : (
+                <button
+                  key={entry}
+                  type="button"
+                  className={`page-btn${entry === safePage ? " current" : ""}`}
+                  aria-current={entry === safePage ? "page" : undefined}
+                  onClick={() => setPage(entry)}
+                >
+                  {entry}
+                </button>
+              ),
+            )}
             <button
               type="button"
               className="page-btn"
