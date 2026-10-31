@@ -133,7 +133,7 @@ class WipServices {
                         ? new Date(item.lot_date).toISOString().slice(0, 10)
                         : '',
 
-                    cause: null,
+                    cause: item.reason_dl,
                     blueFlag: false,
 
                     moNo: item.mo_no ?? null,

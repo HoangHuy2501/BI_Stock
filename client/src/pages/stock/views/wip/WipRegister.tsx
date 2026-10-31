@@ -116,7 +116,7 @@ const WipRegister = ({
     );
 
     const reason = selectedCause
-      ? `${selectedCause.zh} · ${selectedCause.name}`
+      ? `${selectedCause.key}`
       : null;
 
     onTagChange(lot.id, {
