@@ -3,7 +3,11 @@ import { useMemo, useState } from "react";
 import { getStockErrorMessage } from "../../../api/stock";
 import BarChart from "../components/BarChart";
 import Card from "../components/Card";
-import { useStockOverview } from "../hooks/useStockData";
+import {
+  useStockOverview,
+  useWipDataset,
+  useReserveDataset,
+} from "../hooks/useStockData";
 import { pct, usd } from "../lib/format";
 import type { StockFilters } from "../lib/model";
 import { useViewOptions } from "../StockLayout";
@@ -64,6 +68,35 @@ const OverviewSkeleton = () => (
   </main>
 );
 
+const BAND_INDEX: Record<string, number> = {
+  "< 3 months": 0,
+  "3–6 months": 1,
+  "6–9 months": 2,
+  "9–12 months": 3,
+  "12+ months": 4,
+};
+
+interface ReserveRowRaw {
+  ageMonths: number | null;
+  ageBand: string | null;
+}
+
+const oldestOf = (rows: ReserveRowRaw[]) => {
+  let months = 0;
+  let band = 0;
+  for (const row of rows) {
+    if (row.ageMonths == null || row.ageBand == null) continue; // bỏ dòng Unknown
+    if (row.ageMonths > months) {
+      months = row.ageMonths;
+      band = BAND_INDEX[row.ageBand] ?? 0;
+    }
+  }
+  return {
+    oldestMonths: Math.min(12, Math.floor(months)),
+    oldestBandIndex: band,
+  };
+};
+
 const OverviewView = () => {
   const { threshold, agedFrom } = useViewOptions();
 
@@ -80,6 +113,9 @@ const OverviewView = () => {
     year: sel.year ? Number(sel.year) : undefined,
     threshold,
   });
+
+  const wipQuery = useWipDataset();
+  const reserveQuery = useReserveDataset();
 
   // [ĐỔI] luôn truyền filter = -1, không lọc lại ở client
   const model = useMemo(() => {
@@ -137,6 +173,23 @@ const OverviewView = () => {
   const catNames = model.meta.categories.map((c) => c.nameZh);
   const custNames = model.meta.customers;
   const yearNames = model.meta.years;
+
+  const wipRaw = wipQuery.data?.data?.summary;
+  const wipIdx = whNames.indexOf("WIP");
+  const wipSummary =
+    wipRaw && wipIdx >= 0 ? { ...wipRaw, storeIdx: wipIdx } : null;
+  const reserveRaw = reserveQuery.data?.data;
+  const reserveIdx = whNames.indexOf("保留仓 - Reserve Materials WH");
+  const reserveSummary =
+    reserveRaw && reserveIdx >= 0
+      ? {
+          ...reserveRaw,
+          warehouseIdx: reserveIdx,
+          usd: Number(reserveRaw.usd ?? 0),
+          atRiskUsd: Number(reserveRaw.atRiskUsd ?? 0),
+          ...oldestOf(reserveRaw.rows ?? []),
+        }
+      : null;
 
   const idxOf = (labels: string[], value?: string): number =>
     value ? labels.indexOf(value) : -1;
@@ -199,8 +252,8 @@ const OverviewView = () => {
           meta={model.meta}
           whSel={wh}
           onWh={setWh}
-          wip={null}
-          reserve={null}
+          wip={wipSummary}
+          reserve={reserveSummary}
         />
       </Card>
 
