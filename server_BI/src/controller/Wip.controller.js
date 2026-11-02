@@ -50,7 +50,7 @@ exports.UpdateReason = async (req, res, next) => {
     try {
         const data = {
             goods_no: req.body.goodsNo,
-            made_lot: req.body.made_lot || "",
+            made_lot: req.body.made_lot?.trim() || null,
             mo_no: req.body.moNo,
             reason_dl: req.body.reason,
             is_mark: req.body.mark || false
@@ -58,7 +58,6 @@ exports.UpdateReason = async (req, res, next) => {
         if (!data.goods_no || !data.mo_no || !data.reason_dl) {
             throw ApiError.NotFound("not found data goodNo or moNo or reasonDl")
         }
-
         if (data.is_mark === true) {
             const result = await WipService.UpdateMarkAndReason(data);
             return res.json(ApiSuccess.updated("update mark and reason", result))
