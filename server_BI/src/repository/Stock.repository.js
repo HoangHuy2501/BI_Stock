@@ -115,7 +115,7 @@ class StockRepository {
                 .input("threshold", sql.Int, threshold)
                 .query(`
                 select CAST (ROW_NUMBER() OVER (ORDER BY goods_type_desc) - 1 AS INT) AS categoryIdx,
-                    goods_type_desc, 
+                    goods_type_desc as nameZh, 
                     round(sum(end_usd),0) as agedUsd
                     from bi_stock
                     where datediff(day, made_lot_date, GETDATE()) > @threshold AND (@warehouse IS NULL
