@@ -269,10 +269,18 @@ const WipRegister = ({
                       className={blue ? 'blue-toggle on' : 'blue-toggle'}
                       aria-pressed={blue}
                       aria-busy={busy}
-                      disabled={busy}
+                      disabled={busy || tag.cause !== 'delay'}
                       aria-label={blue ? `Clear blue flag for ${lot.goodsNo}` : `Mark ${lot.goodsNo} blue`}
                       title={blue ? 'Blue flag set' : 'Mark blue: needs special attention'}
-                      onClick={() => onTagChange(lot.id, { blueFlag: !tag.blueFlag })}
+                      onClick={() =>
+                        onTagChange(lot.id, {
+                          blueFlag: !tag.blueFlag,
+                          made_lot: lot.made_lot,
+                          moNo: lot.moNo,
+                          goodsNo: lot.goodsNo,
+                          reason: tag.cause,
+                        })
+                      }
                     >
                       {blue ? 'Blue' : 'Mark'}
                     </button>
