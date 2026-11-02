@@ -8,7 +8,7 @@ exports.GetOverview = async (req, res, next) => {
         const warehouse = req.query.warehouse;
         const threshold = Number(req.query.threshold ?? 90);
 
-        if (isNaN(threshold) || threshold < 90) {
+        if (isNaN(threshold) || threshold < 60) {
             return res.json(ApiError.BadRequest('threshold', 'Invalid threshold value. It must be a non-negative number.'));
         }
         const [

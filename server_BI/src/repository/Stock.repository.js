@@ -114,8 +114,8 @@ class StockRepository {
                 .input("warehouse", sql.NVarChar, warehouse?.trim() || null)
                 .input("threshold", sql.Int, threshold)
                 .query(`
-                select CAST (ROW_NUMBER() OVER (ORDER BY effect_no) - 1 AS INT) AS categoryIdx,
-                    effect_no as nameZh, 
+                select CAST (ROW_NUMBER() OVER (ORDER BY goods_type_desc) - 1 AS INT) AS categoryIdx,
+                    goods_type_desc, 
                     round(sum(end_usd),0) as agedUsd
                     from bi_stock
                     where datediff(day, made_lot_date, GETDATE()) > @threshold AND (@warehouse IS NULL
@@ -127,7 +127,7 @@ class StockRepository {
                             @warehouse <> N'半成品仓 - sFG WH'
                             AND st_name LIKE '%' + @warehouse + '%'
                         ))
-                    group by effect_no
+                    group by goods_type_desc
                     order by agedUsd desc
                 `)
             return result.recordset;
@@ -210,7 +210,15 @@ class StockRepository {
                     OR goods_name LIKE '%' + @item + '%'
                     OR cust_name LIKE '%' + @item + '%'
                     OR st_name LIKE '%' + @item + '%'
-        )) AND (@warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%');
+            )) AND (@warehouse IS NULL
+                            OR (
+                                @warehouse = N'半成品仓 - sFG WH'
+                                AND st_no IN ('106', '306')
+                            )
+                            OR (
+                                @warehouse <> N'半成品仓 - sFG WH'
+                                AND st_name LIKE '%' + @warehouse + '%'
+                            ));
         `
             return pagination({
                 query,
