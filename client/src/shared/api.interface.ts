@@ -309,6 +309,7 @@ export interface ReserveDatasetResponse {
 export interface WipTagUpdateRequest {
   cause: string | null;
   blueFlag: boolean;
+  mark: boolean;
   made_lot?: string | null;
   moNo?: string | null;
   goodsNo?: string | null;

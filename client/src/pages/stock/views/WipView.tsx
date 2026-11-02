@@ -104,7 +104,7 @@ const WipView = () => {
     const previous: LotTag = tags[lotId] ?? EMPTY_TAG;
     const next: LotTag = {
       cause: patch.cause === undefined ? previous.cause : patch.cause,
-      blueFlag: patch.blueFlag === undefined ? previous.blueFlag : patch.blueFlag,
+      blueFlag: patch.blueFlag ?? false,
     };
 
     setTags((current: LotTagMap) => ({ ...current, [lotId]: next }));
@@ -116,6 +116,7 @@ const WipView = () => {
         lotId,
         cause: next.cause,
         blueFlag: next.blueFlag,
+        mark: next.blueFlag,
         made_lot: patch.made_lot,
         moNo: patch.moNo,
         goodsNo: patch.goodsNo,
