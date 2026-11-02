@@ -42,19 +42,17 @@ class StockService {
             throw error
         }
     }
-    async AgedRank(warehouse) {
+    async AgedRank(warehouse, threshold) {
         try {
 
-            const items = await StockRepository.AgedRank(warehouse);
-            const thresholdDays = 90;
-            return { thresholdDays, items }
+            const items = await StockRepository.AgedRank(warehouse, threshold);
+            return { threshold, items }
         } catch (error) {
             throw error
         }
     }
     async monthWarehouseLedge() {
         try {
-
             const items = await StockRepository.WarehouseLedger();
             return items;
         } catch (error) {
