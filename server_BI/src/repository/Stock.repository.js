@@ -10,7 +10,16 @@ class StockRepository {
                 .query(`
                 select CAST(ROW_NUMBER() OVER (ORDER BY year(made_lot_date)) - 1 AS INT) AS yearIdx, year(made_lot_date) as year , 
                     round(sum(end_usd), 0) as usd
-                    from bi_stock where @warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%'
+                    from bi_stock 
+                    where @warehouse IS NULL
+                            OR (
+                                @warehouse = N'半成品仓 - sFG WH'
+                                AND st_no IN ('106', '306')
+                            )
+                            OR (
+                                @warehouse <> N'半成品仓 - sFG WH'
+                                AND st_name LIKE '%' + @warehouse + '%'
+                            )
                     group by year(made_lot_date)
                     order by year(made_lot_date) asc
                 `)
@@ -28,7 +37,16 @@ class StockRepository {
                 .query(`
                 select CAST(ROW_NUMBER() OVER (ORDER BY goods_type_desc) - 1 AS INT) AS categoryIdx, goods_type_desc as nameZh, 
                     round(sum(end_usd),0) as usd
-                    from bi_stock where @warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%'
+                    from bi_stock 
+                    where @warehouse IS NULL
+                            OR (
+                                @warehouse = N'半成品仓 - sFG WH'
+                                AND st_no IN ('106', '306')
+                            )
+                            OR (
+                                @warehouse <> N'半成品仓 - sFG WH'
+                                AND st_name LIKE '%' + @warehouse + '%'
+                            )
                     group by goods_type_desc
                 `)
             return result.recordset;
@@ -70,7 +88,16 @@ class StockRepository {
                 select CAST (ROW_NUMBER() OVER (ORDER BY cust_name) - 1 AS INT) AS customerIdx,
                         isnull(cust_name, '-') AS name,
                         round(sum(end_usd),0) as usd
-                        from bi_stock where @warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%'
+                        from bi_stock 
+                        where @warehouse IS NULL
+                            OR (
+                                @warehouse = N'半成品仓 - sFG WH'
+                                AND st_no IN ('106', '306')
+                            )
+                            OR (
+                                @warehouse <> N'半成品仓 - sFG WH'
+                                AND st_name LIKE '%' + @warehouse + '%'
+                            )
                         group by cust_name
                         order by usd desc
                 `)
@@ -80,17 +107,26 @@ class StockRepository {
         }
     }
 
-    async AgedRank(warehouse) {
+    async AgedRank(warehouse, threshold) {
         try {
             const pool = await getPool();
             const result = await pool.request()
                 .input("warehouse", sql.NVarChar, warehouse?.trim() || null)
+                .input("threshold", sql.Int, threshold)
                 .query(`
                 select CAST (ROW_NUMBER() OVER (ORDER BY effect_no) - 1 AS INT) AS categoryIdx,
                     effect_no as nameZh, 
                     round(sum(end_usd),0) as agedUsd
                     from bi_stock
-                    where datediff(day, made_lot_date, GETDATE()) > 90 AND (@warehouse IS NULL OR st_name LIKE '%' + @warehouse + '%')
+                    where datediff(day, made_lot_date, GETDATE()) > @threshold AND (@warehouse IS NULL
+                        OR (
+                            @warehouse = N'半成品仓 - sFG WH'
+                            AND st_no IN ('106', '306')
+                        )
+                        OR (
+                            @warehouse <> N'半成品仓 - sFG WH'
+                            AND st_name LIKE '%' + @warehouse + '%'
+                        ))
                     group by effect_no
                     order by agedUsd desc
                 `)

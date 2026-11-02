@@ -117,14 +117,14 @@ class WipRepository {
                     s.end_qty AS qty,
                     s.unit_no AS unit,
                     s.end_usd AS usd,
-                    r.reason_dl
+                    r.reason_dl,
+                    r.is_mark
                 FROM dbo.bi_stock AS s
                 LEFT JOIN dbo.bi_stock_reason AS r
                     ON r.goods_no = s.goods_no
                 AND r.mo_no = s.mo_no
                 WHERE s.st_name = N'WIP'
                 AND DATEDIFF(DAY, s.made_lot_date, GETDATE()) >= 29
-
                 -- Theo Oldest first:
                 ORDER BY days DESC, usd DESC;
                 `)
@@ -141,7 +141,8 @@ class WipRepository {
                 made_lot,
                 mo_no,
                 goods_no,
-                reason_dl
+                reason_dl,
+                is_mark
             } = data;
             const pool = await getPool();
             const result = await pool.request()
@@ -149,6 +150,7 @@ class WipRepository {
                 .input('made_lot', sql.NVarChar, made_lot ?? null)
                 .input('mo_no', sql.NVarChar, mo_no)
                 .input('reason_dl', sql.NVarChar, reason_dl)
+                .input('is_mark', sql.Bit, is_mark)
                 .query(`
                 --Khi người dùng chọn nguyên nhân
             SET XACT_ABORT ON;
@@ -158,6 +160,7 @@ class WipRepository {
 
                 UPDATE dbo.bi_stock_reason WITH (UPDLOCK, HOLDLOCK)
                 SET reason_dl = @reason_dl,
+                    is_mark = @is_mark,
                     updated_at = GETDATE()
                 WHERE goods_no = @goods_no
                 AND (
@@ -182,6 +185,63 @@ class WipRepository {
 
                 THROW;
             END CATCH;
+
+                `)
+            return result.rowsAffected;
+        } catch (error) {
+            throw error
+        }
+    }
+    // upadte mark and reason
+    async UpdateMarkAndReason(data) {
+        try {
+            const {
+                made_lot,
+                mo_no,
+                goods_no,
+                reason_dl,
+                is_mark
+            } = data;
+            const pool = await getPool();
+            const result = await pool.request()
+                .input('goods_no', sql.NVarChar, goods_no)
+                .input('made_lot', sql.NVarChar, made_lot ?? null)
+                .input('mo_no', sql.NVarChar, mo_no)
+                .input('reason_dl', sql.NVarChar, reason_dl)
+                .input('is_mark', sql.Bit, is_mark)
+                .query(`
+                --Khi người dùng nhấn Mark / Bỏ Mark
+                    SET XACT_ABORT ON;
+
+                    BEGIN TRY
+                        BEGIN TRANSACTION;
+
+                        UPDATE dbo.bi_stock_reason WITH (UPDLOCK, HOLDLOCK)
+                        SET is_mark = @is_mark,
+                            updated_at = GETDATE()
+                        WHERE goods_no = @goods_no
+                        AND (
+                            (@made_lot IS NOT NULL AND made_lot = @made_lot)
+                            OR
+                            (@made_lot IS NULL AND made_lot IS NULL AND mo_no = @mo_no)
+                        );
+
+                        IF @@ROWCOUNT = 0
+                        BEGIN
+                            INSERT INTO dbo.bi_stock_reason
+                                (goods_no, made_lot, mo_no, reason_dl, is_mark, updated_at)
+                            VALUES
+                                (@goods_no, @made_lot, @mo_no, NULL, @is_mark, GETDATE());
+                        END;
+
+                        COMMIT TRANSACTION;
+                    END TRY
+                    BEGIN CATCH
+                        IF @@TRANCOUNT > 0
+                            ROLLBACK TRANSACTION;
+
+                        THROW;
+                    END CATCH;
 
                 `)
             return result.rowsAffected;

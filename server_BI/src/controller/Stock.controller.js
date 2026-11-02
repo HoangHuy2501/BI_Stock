@@ -1,11 +1,17 @@
 
 const StockService = require('../services/Stock.service')
 const ApiSuccess = require('../utils/ApiSuccess')
-
+const ApiError = require('../utils/ApiError')
 
 exports.GetOverview = async (req, res, next) => {
     try {
         const warehouse = req.query.warehouse;
+        const threshold = Number(req.query.threshold ?? 90);
+        console.log("hihi", threshold);
+
+        if (isNaN(threshold) || threshold < 90) {
+            return res.json(ApiError.BadRequest('threshold', 'Invalid threshold value. It must be a non-negative number.'));
+        }
         const [
             annualSummary,
             categorySummary,
@@ -18,7 +24,7 @@ exports.GetOverview = async (req, res, next) => {
             StockService.CategorySummary(warehouse),
             StockService.WarehouseSummary(),
             StockService.BuyerRank(warehouse),
-            StockService.AgedRank(warehouse),
+            StockService.AgedRank(warehouse, threshold),
             StockService.monthWarehouseLedge(),
         ])
 
