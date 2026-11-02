@@ -1,18 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from "react";
 
-import { getStockErrorMessage } from '../../../api/stock';
-import BarChart from '../components/BarChart';
-import Card from '../components/Card';
-import { useStockOverview } from '../hooks/useStockData';
-import { pct, usd } from '../lib/format';
-import type { StockFilters } from '../lib/model';
-import { useViewOptions } from '../StockLayout';
-import DetailTable from './overview/DetailTable';
-import PivotTable from './overview/PivotTable';
-import RankList from './overview/RankList';
-import StoreKpis from './overview/StoreKpis';
-import { buildOverviewModel, buildSummaryOverviewModel } from './overview/model';
-import type { OverviewScope, ScopeDimension } from './overview/scope';
+import { getStockErrorMessage } from "../../../api/stock";
+import BarChart from "../components/BarChart";
+import Card from "../components/Card";
+import { useStockOverview } from "../hooks/useStockData";
+import { pct, usd } from "../lib/format";
+import type { StockFilters } from "../lib/model";
+import { useViewOptions } from "../StockLayout";
+import DetailTable from "./overview/DetailTable";
+import PivotTable from "./overview/PivotTable";
+import RankList from "./overview/RankList";
+import StoreKpis from "./overview/StoreKpis";
+import {
+  buildOverviewModel,
+  buildSummaryOverviewModel,
+} from "./overview/model";
+import type { OverviewScope, ScopeDimension } from "./overview/scope";
 
 interface MonthSpanOption {
   span: number;
@@ -20,9 +23,9 @@ interface MonthSpanOption {
 }
 
 const MONTH_SPANS: MonthSpanOption[] = [
-  { span: 6, label: '6 months' },
-  { span: 12, label: '12 months' },
-  { span: 0, label: 'All months' },
+  { span: 6, label: "6 months" },
+  { span: 12, label: "12 months" },
+  { span: 0, label: "All months" },
 ];
 
 const OverviewSkeleton = () => (
@@ -57,7 +60,8 @@ const OverviewSkeleton = () => (
 
 const OverviewView = () => {
   const { threshold, agedFrom } = useViewOptions();
-  const overview = useStockOverview();
+  const [whName, setWhName] = useState<string | undefined>(undefined);
+  const overview = useStockOverview(whName, threshold);
 
   const [cust, setCust] = useState(-1);
   const [wh, setWh] = useState(-1);
@@ -70,10 +74,16 @@ const OverviewView = () => {
     if (!overview.data) return null;
     const filters: StockFilters = { cust, wh, cat, age, year, agedFrom };
     const data = overview.data;
-    if ('cube' in data) {
-      return { ...buildOverviewModel(data.cube, data.meta, filters), meta: data.meta, totalUsd: data.meta.totalUsd, ledgerAvailable: true };
+    if ("cube" in data) {
+      return {
+        ...buildOverviewModel(data.cube, data.meta, filters),
+        meta: data.meta,
+        totalUsd: data.meta.totalUsd,
+        ledgerAvailable: true,
+      };
     }
-    return buildSummaryOverviewModel(data, filters, threshold);
+    // Summary: BE đã lọc theo kho (query ?warehouse=...), không lọc wh lần nữa
+    return buildSummaryOverviewModel(data, { ...filters, wh: -1 }, threshold);
   }, [overview.data, cust, wh, cat, age, year, agedFrom, threshold]);
 
   const resetAll = (): void => {
@@ -85,11 +95,11 @@ const OverviewView = () => {
   };
 
   const clearDimension = (dimension: ScopeDimension): void => {
-    if (dimension === 'cust') setCust(-1);
-    if (dimension === 'wh') setWh(-1);
-    if (dimension === 'cat') setCat(-1);
-    if (dimension === 'age') setAge(-1);
-    if (dimension === 'year') setYear(-1);
+    if (dimension === "cust") setCust(-1);
+    if (dimension === "wh") setWh(-1);
+    if (dimension === "cat") setCat(-1);
+    if (dimension === "age") setAge(-1);
+    if (dimension === "year") setYear(-1);
   };
 
   if (overview.isPending) return <OverviewSkeleton />;
@@ -101,7 +111,12 @@ const OverviewView = () => {
         <Card zh="库存总览" en="Stock overview">
           <div className="empty">
             <h3>Unable to load the stock overview</h3>
-            <p>{getStockErrorMessage(overview.error, 'The stock dataset could not be loaded.')}</p>
+            <p>
+              {getStockErrorMessage(
+                overview.error,
+                "The stock dataset could not be loaded.",
+              )}
+            </p>
             <button
               type="button"
               onClick={() => {
@@ -121,12 +136,30 @@ const OverviewView = () => {
   return (
     <main className="wrap stack">
       {/* row-1-2 */}
-      <div className="row-2"> 
-        <Card zh="年度汇总" en="Annual Summary" note={`${usd(model.scoped.usd)} in total`}>
-          <BarChart items={model.yearBars} picked={year} onPick={setYear} muted={model.noYearUsd} />
+      <div className="row-2">
+        <Card
+          zh="年度汇总"
+          en="Annual Summary"
+          note={`${usd(model.scoped.usd)} in total`}
+        >
+          <BarChart
+            items={model.yearBars}
+            picked={year}
+            onPick={setYear}
+            muted={model.noYearUsd}
+          />
         </Card>
-        <Card zh="类别汇总" en="Category Summary" note={`${pct(model.noCatUsd, model.totalUsd)} of total`}>
-          <BarChart items={model.catBars} picked={cat} onPick={setCat} muted={model.noCatUsd} />
+        <Card
+          zh="类别汇总"
+          en="Category Summary"
+          note={`${pct(model.noCatUsd, model.totalUsd)} of total`}
+        >
+          <BarChart
+            items={model.catBars}
+            picked={cat}
+            onPick={setCat}
+            muted={model.noCatUsd}
+          />
         </Card>
       </div>
 
@@ -139,17 +172,36 @@ const OverviewView = () => {
           rows={model.storeRows}
           meta={model.meta}
           whSel={wh}
-          onWh={setWh}
-          wip={'cube' in data ? data.wipSummary : null}
-          reserve={'cube' in data ? data.reserveSummary : null}
+          onWh={(idx: number) => {
+            setWh(idx);
+            setCust(-1);
+            setCat(-1);
+            setYear(-1);
+            setAge(-1);
+            setWhName(
+              idx >= 0 ? model.meta.warehouses[idx]?.nameZh : undefined,
+            );
+          }}
+          wip={"cube" in data ? data.wipSummary : null}
+          reserve={"cube" in data ? data.reserveSummary : null}
         />
       </Card>
 
       <div className="row-2">
-        <Card zh="客户排行" en="Buyer Rank" note="by value" className="rank-card">
+        <Card
+          zh="客户排行"
+          en="Buyer Rank"
+          note="by value"
+          className="rank-card"
+        >
           <RankList rows={model.buyerRows} picked={cust} onPick={setCust} />
         </Card>
-        <Card zh="库龄排行" en="Aged Rank" note={`past ${threshold} d`} className="rank-card">
+        <Card
+          zh="库龄排行"
+          en="Aged Rank"
+          note={`past ${threshold} d`}
+          className="rank-card"
+        >
           <RankList rows={model.agedRows} picked={cat} onPick={setCat} alt />
         </Card>
       </div>
@@ -163,7 +215,7 @@ const OverviewView = () => {
               <button
                 key={option.span}
                 type="button"
-                className={monthSpan === option.span ? 'on' : undefined}
+                className={monthSpan === option.span ? "on" : undefined}
                 aria-pressed={monthSpan === option.span}
                 onClick={() => setMonthSpan(option.span)}
               >
@@ -192,7 +244,9 @@ const OverviewView = () => {
         meta={model.meta}
         scope={scope}
         threshold={threshold}
-        scopeLines={model.scoped.lines == null ? null : Math.round(model.scoped.lines)}
+        scopeLines={
+          model.scoped.lines == null ? null : Math.round(model.scoped.lines)
+        }
         available={true}
         onClear={clearDimension}
         onResetAll={resetAll}

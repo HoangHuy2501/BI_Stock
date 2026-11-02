@@ -193,10 +193,10 @@ const toDetailResponse = (
 };
 
 export const stockApi = {
-  overview: async (): Promise<StockOverviewData> => {
+  overview: async (warehouse?: string): Promise<StockOverviewData> => {
     const response = await requestGet<
       StockOverviewData | StockOverviewApiResponse
-    >("/api/stock/overview");
+    >("/api/stock/overview", { warehouse });
     if ("success" in response) {
       if (!response.success || !response.data) {
         throw new Error(response.message || "Could not load overview");

@@ -1,28 +1,43 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
-import type { WipTagUpdateRequest } from '@shared/api.interface';
+import type { WipTagUpdateRequest } from "@shared/api.interface";
 
-import { stockApi, type StockDetailQuery } from '../../../api/stock';
+import { stockApi, type StockDetailQuery } from "../../../api/stock";
 
 export const stockKeys = {
-  all: ['stock'] as const,
-  overview: ['stock', 'overview'] as const,
-  wip: ['stock', 'wip'] as const,
-  reserve: ['stock', 'reserve'] as const,
-  source: ['stock', 'source'] as const,
-  detail: (query: StockDetailQuery) => ['stock', 'detail', query] as const,
+  all: ["stock"] as const,
+  overview: (warehouse?: string) =>
+    ["stock", "overview", warehouse ?? "all"] as const,
+  wip: ["stock", "wip"] as const,
+  reserve: ["stock", "reserve"] as const,
+  source: ["stock", "source"] as const,
+  detail: (query: StockDetailQuery) => ["stock", "detail", query] as const,
 };
 
-export const useStockOverview = () =>
-  useQuery({ queryKey: stockKeys.overview, queryFn: () => stockApi.overview() });
+// useStockData.ts
+export const useStockOverview = (warehouse?: string, threshold?: number) =>
+  useQuery({
+    queryKey: ["stock", "overview", warehouse ?? null, threshold ?? null],
+    queryFn: () => stockApi.overview(warehouse),
+    placeholderData: keepPreviousData,
+  });
 
-export const useWipDataset = () => useQuery({ queryKey: stockKeys.wip, queryFn: () => stockApi.wip() });
+export const useWipDataset = () =>
+  useQuery({ queryKey: stockKeys.wip, queryFn: () => stockApi.wip() });
 
 export const useReserveDataset = () =>
   useQuery({ queryKey: stockKeys.reserve, queryFn: () => stockApi.reserve() });
 
 export const useSourceStatus = () =>
-  useQuery({ queryKey: stockKeys.source, queryFn: () => stockApi.sourceStatus() });
+  useQuery({
+    queryKey: stockKeys.source,
+    queryFn: () => stockApi.sourceStatus(),
+  });
 
 export const useStockDetail = (query: StockDetailQuery, enabled = true) =>
   useQuery({
@@ -52,7 +67,7 @@ export const useUpdateWipTag = () => {
 export const useRefreshCache = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (keys?: ('reserve' | 'wip')[]) => stockApi.refreshCache(keys),
+    mutationFn: (keys?: ("reserve" | "wip")[]) => stockApi.refreshCache(keys),
     retry: false,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: stockKeys.all }),
   });
