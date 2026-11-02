@@ -13,7 +13,16 @@ import WipHistogram from './wip/WipHistogram';
 import WipLights from './wip/WipLights';
 import WipRegister from './wip/WipRegister';
 import WipSkeleton from './wip/WipSkeleton';
-import { EMPTY_FOCUS, EMPTY_TAG, causeLabel, filterLots, focusKeyOf, seedTags, toggleFocus } from './wip/state';
+import {
+  EMPTY_FOCUS,
+  EMPTY_TAG,
+  causeLabel,
+  filterLots,
+  focusKeyOf,
+  normalizeBuyerName,
+  seedTags,
+  toggleFocus,
+} from './wip/state';
 import type { LotTag, LotTagMap, WipChip, WipFocus, WipFocusDim, WipSort, WipTagPatch } from './wip/types';
 import './wip/wip.css';
 
@@ -28,8 +37,22 @@ const WipView = () => {
   const [tagError, setTagError] = useState<string | null>(null);
 
   const dataset = wipQuery.data?.data;
-  const lots: WipLotItem[] = useMemo<WipLotItem[]>(() => (dataset ? dataset.lots : []), [dataset]);
   const customers: string[] = useMemo<string[]>(() => (dataset ? dataset.customers : []), [dataset]);
+  const lots: WipLotItem[] = useMemo<WipLotItem[]>(
+    () =>
+      dataset
+        ? dataset.lots.map((lot: WipLotItem) => {
+            const customerName = normalizeBuyerName(lot.customerName);
+            const customerIdx = customers.indexOf(customerName);
+            return {
+              ...lot,
+              customerName,
+              customerIdx: customerIdx >= 0 ? customerIdx : lot.customerIdx,
+            };
+          })
+        : [],
+    [dataset, customers],
+  );
   const summary: StockWipSummary | null = dataset ? dataset.summary : null;
 
   /* the server is the source of truth for tags: re-seed whenever the query refreshes */
@@ -81,7 +104,7 @@ const WipView = () => {
     const previous: LotTag = tags[lotId] ?? EMPTY_TAG;
     const next: LotTag = {
       cause: patch.cause === undefined ? previous.cause : patch.cause,
-      blueFlag: patch.blueFlag === undefined ? previous.blueFlag : patch.blueFlag,
+      blueFlag: patch.blueFlag ?? false,
     };
 
     setTags((current: LotTagMap) => ({ ...current, [lotId]: next }));
@@ -93,6 +116,7 @@ const WipView = () => {
         lotId,
         cause: next.cause,
         blueFlag: next.blueFlag,
+        mark: next.blueFlag,
         made_lot: patch.made_lot,
         moNo: patch.moNo,
         goodsNo: patch.goodsNo,

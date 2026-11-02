@@ -1,6 +1,7 @@
 import type { ReserveBuyer, ReserveDataset } from '@shared/api.interface';
 
 import { num, pct, usd } from '../../lib/format';
+import { reserveBandKeyOf } from '../../lib/reserve';
 import type { ReserveFocus, ReservePick } from './focus';
 
 interface ReserveByBuyerProps {
@@ -12,9 +13,22 @@ interface ReserveByBuyerProps {
 const ReserveByBuyer = ({ dataset, focus, onPick }: ReserveByBuyerProps) => {
   const bandIndex = focus.band;
   const band = bandIndex !== null ? dataset.bands[bandIndex] : undefined;
-  const rows: ReserveBuyer[] = bandIndex !== null
-    ? dataset.bandBuyers[bandIndex] ?? dataset.buyers
-    : dataset.buyers;
+  const rows: ReserveBuyer[] = bandIndex === null
+    ? dataset.buyers
+    : dataset.bandBuyers?.[bandIndex] ?? (() => {
+        const byBuyer = new Map<string, { usd: number; lines: number }>();
+        const selectedBandKey = reserveBandKeyOf(band?.labelEn ?? null);
+        dataset.rows.forEach((line) => {
+          if (reserveBandKeyOf(line.ageBand) !== selectedBandKey) return;
+          const name = line.buyer?.trim() || '-';
+          const totals = byBuyer.get(name) ?? { usd: 0, lines: 0 };
+          totals.usd += line.usd;
+          totals.lines += 1;
+          byBuyer.set(name, totals);
+        });
+        return Array.from(byBuyer, ([name, totals], idx) => ({ idx, name, ...totals }))
+          .sort((a, b) => b.usd - a.usd);
+      })();
   const signalUsd = band ? band.usd : dataset.atRiskUsd;
   const total = signalUsd || 1;
   const max = rows.reduce((peak: number, row: ReserveBuyer): number => Math.max(peak, row.usd), 1);
@@ -32,13 +46,13 @@ const ReserveByBuyer = ({ dataset, focus, onPick }: ReserveByBuyerProps) => {
   return (
     <div className="rank-list fill">
       {rows.map((row: ReserveBuyer) => {
-        const on = focus.cust === row.idx;
+        const on = focus.cust === row.name;
         return (
           <button
             type="button"
             className={`rank-row no-badge is-pick${on ? ' is-on' : ''}`}
-            key={row.idx}
-            onClick={() => onPick('cust', row.idx)}
+            key={row.name}
+            onClick={() => onPick('cust', row.name)}
             aria-pressed={on}
             title={
               band

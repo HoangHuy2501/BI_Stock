@@ -1,16 +1,28 @@
 import { useEffect, useState } from 'react';
 
-import type { ReserveDataset, StockDetailLine } from '@shared/api.interface';
+import type { ReserveDataset, ReserveRegisterLine } from '@shared/api.interface';
 
 import { num, usd } from '../../lib/format';
-import { bandOf, monthsOfDays } from '../../lib/reserve';
+import { RESERVE_BANDS } from '../../lib/reserve';
 import type { ReserveBalance, ReserveChip } from './focus';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
+
+const buildPageList = (pageCount: number, current: number): (number | 'gap')[] => {
+  const out: (number | 'gap')[] = [];
+  for (let pageNo = 1; pageNo <= pageCount; pageNo += 1) {
+    if (pageNo === 1 || pageNo === pageCount || (pageNo >= current + 1 && pageNo <= current + 2)) {
+      out.push(pageNo);
+    } else if (out[out.length - 1] !== 'gap') {
+      out.push('gap');
+    }
+  }
+  return out;
+};
 
 interface ReserveRegisterProps {
   dataset: ReserveDataset;
-  rows: StockDetailLine[];
+  rows: ReserveRegisterLine[];
   chips: ReserveChip[];
   balance: ReserveBalance | null;
   focusKey: string;
@@ -33,12 +45,16 @@ const ReserveRegister = ({
     setPage(0);
   }, [focusKey]);
 
-  const ordered: StockDetailLine[] = rows
+  const ordered: ReserveRegisterLine[] = rows
     .slice()
-    .sort((a: StockDetailLine, b: StockDetailLine): number => b.ageDays - a.ageDays);
+    .sort((a: ReserveRegisterLine, b: ReserveRegisterLine): number =>
+      (b.ageMonths ?? -1) - (a.ageMonths ?? -1),
+    );
   const pages = Math.max(1, Math.ceil(ordered.length / PAGE_SIZE));
   const safePage = Math.min(page, pages - 1);
   const slice = ordered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+  const from = ordered.length > 0 ? safePage * PAGE_SIZE + 1 : 0;
+  const to = Math.min(ordered.length, (safePage + 1) * PAGE_SIZE);
 
   /* value in the selection that carries no item-level line — keeps the register reconciled with the signals */
   const gap = balance && balance.usd > 1 ? balance : null;
@@ -112,10 +128,10 @@ const ReserveRegister = ({
       </div>
 
       <div className={showTable ? 'table-scroll' : 'table-scroll is-hidden'}>
-        <table className="detail">
+        <table className="detail reserve-register">
           <thead>
             <tr>
-              <th style={{ width: '30%' }}>Item 物料</th>
+              <th className="reserve-item-column">Item 物料</th>
               <th>Code 编码</th>
               <th>Lot / batch 批次</th>
               <th className="nowrap">Date</th>
@@ -128,45 +144,51 @@ const ReserveRegister = ({
             </tr>
           </thead>
           <tbody>
-            {slice.map((line: StockDetailLine) => {
-              const months = monthsOfDays(line.ageDays);
-              const band = bandOf(months);
-              const goodsLink = `http://172.18.1.12:4004/?goods_no=${encodeURIComponent(line.goodsNo)}`;
+            {slice.map((line: ReserveRegisterLine) => {
+              const goodsLink =
+                `http://172.18.1.12:4004/?goods_no=${encodeURIComponent(line.goodsNo ?? '')}` +
+                `&made_lot=${encodeURIComponent(line.batchNo ?? '')}`;
+              const bandStyle =
+                RESERVE_BANDS.find((band) => band.label === line.ageBand) ??
+                (line.ageBand === '12+ months' ? RESERVE_BANDS[RESERVE_BANDS.length - 1] : undefined);
               return (
                 <tr className="row" key={line.id}>
-                  <td>
+                  <td className="reserve-item-column">
                     <span className="cell-item">
-                      <span className="name">{line.itemName}</span>
-                      <span className="meta">
-                        {line.categoryZh} · {line.warehouseZh}
-                      </span>
+                      <span className="name">{line.itemName ?? '—'}</span>
+                      <span className="meta">{line.categoryName ?? '—'}</span>
                     </span>
                   </td>
-                  <td className="mono-cell">{line.goodsNo}</td>
+                  <td className="mono-cell">{line.goodsNo ?? '—'}</td>
                   <td className="mono-cell">{line.batchNo || '—'}</td>
-                  <td className="nowrap">{line.lotDate ?? '—'}</td>
-                  <td className="nowrap">{line.customerName}</td>
+                  <td className="nowrap">{line.lotDate ? line.lotDate.slice(0, 10) : '—'}</td>
+                  <td className="nowrap">{line.buyer ?? '—'}</td>
                   <td className="reason-cell">
                     {line.reasonDl || <span className="not-recorded">Not recorded</span>}
                   </td>
-                  <td className="reason-cell">
+                  <td className="reason-cell reserve-link-cell">
                     {line.reasonDl !== null ? (
                       '—'
                     ) : (
-                      <a href={goodsLink} target="_blank" rel="noopener noreferrer">
+                      <a className="reserve-goods-link" href={goodsLink} target="_blank" rel="noopener noreferrer">
                         {goodsLink}
                       </a>
                     )}
                   </td>
                   <td>
-                    <span className="band-pill" style={{ color: band.ink, background: band.tint }}>
-                      {band.label}
-                    </span>
+                    {line.ageBand ? (
+                      <span
+                        className="band-pill"
+                        style={bandStyle ? { color: bandStyle.ink, background: bandStyle.tint } : undefined}
+                      >
+                        {line.ageBand}
+                      </span>
+                    ) : '—'}
                   </td>
                   <td className="num">
-                    <span className="band-pill" style={{ color: band.ink, background: band.tint }}>
-                      {months.toFixed(1)}
-                    </span>
+                    {typeof line.ageMonths !== 'number' || !Number.isFinite(line.ageMonths) ? '—' : (
+                      <span className="band-pill">{line.ageMonths.toFixed(1)}</span>
+                    )}
                   </td>
                   <td className="num value-cell">{usd(line.usd)}</td>
                 </tr>
@@ -174,7 +196,7 @@ const ReserveRegister = ({
             })}
             {gap && safePage === pages - 1 ? (
               <tr className="row is-balance" key="__balance">
-                <td>
+                <td className="reserve-item-column">
                   <span className="cell-item">
                     <span className="name">Not itemised — lots in this selection without an item-level line</span>
                   </span>
@@ -201,21 +223,11 @@ const ReserveRegister = ({
       </div>
 
       <div className={showTable ? 'pager' : 'pager is-hidden'}>
-        <span className="pager-info">
-          Page {safePage + 1} of {pages} · showing {slice.length > 0 ? safePage * PAGE_SIZE + 1 : 0}–
-          {safePage * PAGE_SIZE + slice.length} of {num(ordered.length)} detail lines
+        <span className="pager-info num">
+          {num(from)}–{num(to)} of {num(ordered.length)}
           {gap ? ' + 1 balance row' : ''}
         </span>
         <div className="pager-btns">
-          <button
-            type="button"
-            className="page-btn"
-            onClick={() => setPage(0)}
-            disabled={safePage === 0}
-            aria-label="First page"
-          >
-            «
-          </button>
           <button
             type="button"
             className="page-btn"
@@ -225,26 +237,31 @@ const ReserveRegister = ({
           >
             ‹
           </button>
-          <span className="page-btn current" aria-current="page">
-            {safePage + 1}
-          </span>
+          {buildPageList(pages, safePage).map((pageNo: number | 'gap', index: number) =>
+            pageNo === 'gap' ? (
+              <span className="page-gap" key={`gap-${index}`}>
+                …
+              </span>
+            ) : (
+              <button
+                key={pageNo}
+                type="button"
+                className={pageNo === safePage + 1 ? 'page-btn current' : 'page-btn'}
+                aria-current={pageNo === safePage + 1 ? 'page' : undefined}
+                onClick={() => setPage(pageNo - 1)}
+              >
+                {pageNo}
+              </button>
+            ),
+          )}
           <button
             type="button"
             className="page-btn"
-            onClick={() => setPage(safePage + 1)}
+            onClick={() => setPage(Math.min(pages - 1, safePage + 1))}
             disabled={safePage >= pages - 1}
             aria-label="Next page"
           >
             ›
-          </button>
-          <button
-            type="button"
-            className="page-btn"
-            onClick={() => setPage(pages - 1)}
-            disabled={safePage >= pages - 1}
-            aria-label="Last page"
-          >
-            »
           </button>
         </div>
       </div>

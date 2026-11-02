@@ -54,6 +54,7 @@ export const useUpdateWipTag = () => {
       stockApi.updateWipTag(payload.lotId, {
         cause: payload.cause,
         blueFlag: payload.blueFlag,
+        mark: payload.mark,
         made_lot: payload.made_lot,
         moNo: payload.moNo,
         goodsNo: payload.goodsNo,

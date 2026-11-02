@@ -55,7 +55,7 @@ export const lightOf = (days: number): number => {
   return 3;
 };
 
-export const isBlueTag = (cause: string | null, blueFlag: boolean): boolean => cause === 'delay' || blueFlag;
+export const isBlueTag = (_cause: string | null, blueFlag: boolean): boolean => blueFlag;
 
 export const WEEK_RANGES: number[][] = [
   [0, 7],

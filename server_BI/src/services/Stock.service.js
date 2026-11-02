@@ -14,9 +14,9 @@ class StockService {
         }
     }
 
-    async CategorySummary() {
+    async CategorySummary(warehouse) {
         try {
-            const items = await StockRepository.CategorySummary();
+            const items = await StockRepository.CategorySummary(warehouse);
             let totalUsd = 0
             items.forEach(element => {
                 totalUsd += element.usd
@@ -34,27 +34,25 @@ class StockService {
             throw error
         }
     }
-    async BuyerRank() {
+    async BuyerRank(warehouse) {
         try {
-            const items = await StockRepository.BuyerRank();
+            const items = await StockRepository.BuyerRank(warehouse);
             return { items }
         } catch (error) {
             throw error
         }
     }
-    async AgedRank() {
+    async AgedRank(warehouse, threshold) {
         try {
 
-            const items = await StockRepository.AgedRank();
-            const thresholdDays = 90;
-            return { thresholdDays, items }
+            const items = await StockRepository.AgedRank(warehouse, threshold);
+            return { threshold, items }
         } catch (error) {
             throw error
         }
     }
     async monthWarehouseLedge() {
         try {
-
             const items = await StockRepository.WarehouseLedger();
             return items;
         } catch (error) {

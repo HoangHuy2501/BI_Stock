@@ -57,7 +57,7 @@ const ReserveHistogram = ({ dataset, focus, onPick }: ReserveHistogramProps) => 
         {RESERVE_BANDS.map((band) => (
           <span key={band.key} className="hist-key-item">
             <i style={{ background: band.color }} />
-            {band.label} · {band.zh}
+            {band.label}
           </span>
         ))}
       </div>

@@ -10,6 +10,11 @@ export const EMPTY_FOCUS: WipFocus = { light: null, week: null, cust: null, caus
 
 export const OPEN_CAUSE_KEY = 'open';
 
+export const normalizeBuyerName = (name: string | null | undefined): string => {
+  const normalized = name?.trim();
+  return !normalized || normalized === '-' ? 'Other / unbranded' : normalized;
+};
+
 export const seedTags = (lots: WipLotItem[]): LotTagMap => {
   const map: LotTagMap = {};
   lots.forEach((lot: WipLotItem) => {
