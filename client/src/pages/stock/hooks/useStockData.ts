@@ -7,23 +7,25 @@ import {
 
 import type { WipTagUpdateRequest } from "@shared/api.interface";
 
-import { stockApi, type StockDetailQuery } from "../../../api/stock";
+import {
+  stockApi,
+  type OverviewQuery,
+  type StockDetailQuery,
+} from "../../../api/stock";
 
 export const stockKeys = {
   all: ["stock"] as const,
-  overview: (warehouse?: string) =>
-    ["stock", "overview", warehouse ?? "all"] as const,
+  overview: (q: OverviewQuery) => ["stock", "overview", q] as const,
   wip: ["stock", "wip"] as const,
   reserve: ["stock", "reserve"] as const,
   source: ["stock", "source"] as const,
   detail: (query: StockDetailQuery) => ["stock", "detail", query] as const,
 };
 
-// useStockData.ts
-export const useStockOverview = (warehouse?: string, threshold?: number) =>
+export const useStockOverview = (q: OverviewQuery) =>
   useQuery({
-    queryKey: ["stock", "overview", warehouse ?? null, threshold ?? null],
-    queryFn: () => stockApi.overview(warehouse),
+    queryKey: stockKeys.overview(q),
+    queryFn: () => stockApi.overview(q),
     placeholderData: keepPreviousData,
   });
 

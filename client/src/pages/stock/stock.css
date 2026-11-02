@@ -716,7 +716,7 @@ table.pivot thead th.sub:nth-last-child(2) { font-weight: 600; }
 
 .search input::placeholder { color: var(--faint); }
 
-.count { font-size: 11.5px; color: var(--ink-3); }
+.count { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; flex-shrink: 0;}
 
 table.detail {
   width: 100%;

@@ -11,10 +11,8 @@ import DetailTable from "./overview/DetailTable";
 import PivotTable from "./overview/PivotTable";
 import RankList from "./overview/RankList";
 import StoreKpis from "./overview/StoreKpis";
-import {
-  buildOverviewModel,
-  buildSummaryOverviewModel,
-} from "./overview/model";
+// [ĐỔI] bỏ buildOverviewModel, chỉ còn buildSummaryOverviewModel
+import { buildSummaryOverviewModel } from "./overview/model";
 import type { OverviewScope, ScopeDimension } from "./overview/scope";
 
 interface MonthSpanOption {
@@ -27,6 +25,14 @@ const MONTH_SPANS: MonthSpanOption[] = [
   { span: 12, label: "12 months" },
   { span: 0, label: "All months" },
 ];
+
+// [MỚI] lưu lựa chọn theo TÊN thay vì idx
+interface Selection {
+  wh?: string;
+  cat?: string;
+  cust?: string;
+  year?: string;
+}
 
 const OverviewSkeleton = () => (
   <main className="wrap stack" aria-busy="true">
@@ -60,52 +66,47 @@ const OverviewSkeleton = () => (
 
 const OverviewView = () => {
   const { threshold, agedFrom } = useViewOptions();
-  const [whName, setWhName] = useState<string | undefined>(undefined);
-  const overview = useStockOverview(whName, threshold);
 
-  const [cust, setCust] = useState(-1);
-  const [wh, setWh] = useState(-1);
-  const [cat, setCat] = useState(-1);
-  const [age, setAge] = useState(-1);
-  const [year, setYear] = useState(-1);
+  // [XÓA] whName/setWhName và 5 useState số: cust, wh, cat, age, year
+  // [MỚI] thay bằng 1 state theo tên
+  const [sel, setSel] = useState<Selection>({});
   const [monthSpan, setMonthSpan] = useState(12);
 
-  const model = useMemo(() => {
-    if (!overview.data) return null;
-    const filters: StockFilters = { cust, wh, cat, age, year, agedFrom };
-    const data = overview.data;
-    if ("cube" in data) {
-      return {
-        ...buildOverviewModel(data.cube, data.meta, filters),
-        meta: data.meta,
-        totalUsd: data.meta.totalUsd,
-        ledgerAvailable: true,
-      };
-    }
-    // Summary: BE đã lọc theo kho (query ?warehouse=...), không lọc wh lần nữa
-    return buildSummaryOverviewModel(data, { ...filters, wh: -1 }, threshold);
-  }, [overview.data, cust, wh, cat, age, year, agedFrom, threshold]);
+  // [ĐỔI] truyền object, BE lọc theo các tham số này
+  const overview = useStockOverview({
+    warehouse: sel.wh,
+    nameZh: sel.cat,
+    name: sel.cust,
+    year: sel.year ? Number(sel.year) : undefined,
+    threshold,
+  });
 
-  const resetAll = (): void => {
-    setCust(-1);
-    setWh(-1);
-    setCat(-1);
-    setAge(-1);
-    setYear(-1);
-  };
+  // [ĐỔI] luôn truyền filter = -1, không lọc lại ở client
+  const model = useMemo(() => {
+    const data = overview.data;
+    if (!data || "cube" in data) return null;
+    const noFilter: StockFilters = {
+      cust: -1,
+      wh: -1,
+      cat: -1,
+      age: -1,
+      year: -1,
+      agedFrom,
+    };
+    return buildSummaryOverviewModel(data, noFilter, threshold);
+  }, [overview.data, threshold, agedFrom]);
+
+  // [ĐỔI] reset / clear theo state mới
+  const resetAll = (): void => setSel({});
 
   const clearDimension = (dimension: ScopeDimension): void => {
-    if (dimension === "cust") setCust(-1);
-    if (dimension === "wh") setWh(-1);
-    if (dimension === "cat") setCat(-1);
-    if (dimension === "age") setAge(-1);
-    if (dimension === "year") setYear(-1);
+    if (dimension === "age") return;
+    setSel((s) => ({ ...s, [dimension]: undefined }));
   };
 
   if (overview.isPending) return <OverviewSkeleton />;
 
-  const data = overview.data;
-  if (!data || !model) {
+  if (!overview.data || !model) {
     return (
       <main className="wrap stack">
         <Card zh="库存总览" en="Stock overview">
@@ -131,11 +132,35 @@ const OverviewView = () => {
     );
   }
 
-  const scope: OverviewScope = { cust, wh, cat, age, year };
+  // [MỚI] tính idx từ tên (đặt SAU các early return, vì cần model khác null)
+  const whNames = model.meta.warehouses.map((w) => w.nameZh);
+  const catNames = model.meta.categories.map((c) => c.nameZh);
+  const custNames = model.meta.customers;
+  const yearNames = model.meta.years;
+
+  const idxOf = (labels: string[], value?: string): number =>
+    value ? labels.indexOf(value) : -1;
+
+  const wh = idxOf(whNames, sel.wh);
+  const cat = idxOf(catNames, sel.cat);
+  const cust = idxOf(custNames, sel.cust);
+  const year = idxOf(yearNames, sel.year);
+
+  const pick =
+    (field: keyof Selection, labels: string[]) =>
+    (idx: number): void =>
+      setSel((s) => ({ ...s, [field]: idx >= 0 ? labels[idx] : undefined }));
+
+  const setWh = pick("wh", whNames);
+  const setCat = pick("cat", catNames);
+  const setCust = pick("cust", custNames);
+  const setYear = pick("year", yearNames);
+
+  // [ĐỔI] age luôn -1
+  const scope: OverviewScope = { cust, wh, cat, age: -1, year };
 
   return (
     <main className="wrap stack">
-      {/* row-1-2 */}
       <div className="row-2">
         <Card
           zh="年度汇总"
@@ -168,22 +193,14 @@ const OverviewView = () => {
         en="Warehouse Summary"
         note={`${model.storeRows.length} warehouses · value, highest first`}
       >
+        {/* [ĐỔI] onWh={setWh}, wip/reserve = null */}
         <StoreKpis
           rows={model.storeRows}
           meta={model.meta}
           whSel={wh}
-          onWh={(idx: number) => {
-            setWh(idx);
-            setCust(-1);
-            setCat(-1);
-            setYear(-1);
-            setAge(-1);
-            setWhName(
-              idx >= 0 ? model.meta.warehouses[idx]?.nameZh : undefined,
-            );
-          }}
-          wip={"cube" in data ? data.wipSummary : null}
-          reserve={"cube" in data ? data.reserveSummary : null}
+          onWh={setWh}
+          wip={null}
+          reserve={null}
         />
       </Card>
 
@@ -202,6 +219,7 @@ const OverviewView = () => {
           note={`past ${threshold} d`}
           className="rank-card"
         >
+          {/* [ĐỔI] picked={cat} onPick={setCat} */}
           <RankList rows={model.agedRows} picked={cat} onPick={setCat} alt />
         </Card>
       </div>

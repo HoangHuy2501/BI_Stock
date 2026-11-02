@@ -35,6 +35,14 @@ export interface StockDetailQuery {
   lot?: string;
 }
 
+export interface OverviewQuery {
+  warehouse?: string;
+  year?: number;
+  nameZh?: string; // category
+  name?: string; // customer
+  threshold?: number;
+}
+
 interface ApiErrorBody {
   error?: {
     code?: string;
@@ -193,10 +201,10 @@ const toDetailResponse = (
 };
 
 export const stockApi = {
-  overview: async (warehouse?: string): Promise<StockOverviewData> => {
+  overview: async (query: OverviewQuery = {}): Promise<StockOverviewData> => {
     const response = await requestGet<
       StockOverviewData | StockOverviewApiResponse
-    >("/api/stock/overview", { warehouse });
+    >("/api/stock/overview", { ...query });
     if ("success" in response) {
       if (!response.success || !response.data) {
         throw new Error(response.message || "Could not load overview");
@@ -212,11 +220,11 @@ export const stockApi = {
     const raw = await requestGet<unknown>("/api/stock/detail", {
       page,
       pageSize,
-      item: query.item,
-      code: query.code,
-      lot: query.lot,
-      buyer: query.buyer,
+      item: query.item ?? query.code ?? query.lot,
       warehouse: query.warehouse,
+      year: query.year,
+      nameZh: query.category,
+      name: query.buyer,
     });
     return toDetailResponse(raw, page, pageSize);
   },
