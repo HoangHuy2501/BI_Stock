@@ -328,8 +328,11 @@ class StockRepository {
                 -- 0  = Tất cả
 
                 SELECT
-                    st_name as warehouseName,
-                    effect_no as categoryName,
+                    CASE
+                        WHEN st_no IN ('106', '306') THEN N'半成品仓 - sFG WH'
+                        ELSE st_name
+                    END AS warehouseName,
+                    goods_type_desc as categoryName,
                     ISNULL(cust_name, '-') AS customerName,
                     FORMAT(made_lot_date, 'yyyy-MM') AS 'month',
                     SUM(end_qty) AS qty,
@@ -376,14 +379,17 @@ class StockRepository {
                     )
 
                 GROUP BY
-                    st_name,
-                    effect_no,
+                    CASE
+                        WHEN st_no IN ('106', '306') THEN N'半成品仓 - sFG WH'
+                        ELSE st_name
+                    END,
+                    goods_type_desc,
                     ISNULL(cust_name, '-'),
                     FORMAT(made_lot_date, 'yyyy-MM')
                 ORDER BY
                     'month' DESC,
-                    st_name,
-                    effect_no,
+                    warehouseName,
+                    goods_type_desc,
                     customerName;
                 `)
             return result.recordset;
