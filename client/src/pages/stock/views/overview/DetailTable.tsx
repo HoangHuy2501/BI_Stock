@@ -208,7 +208,7 @@ const DetailTable = ({
               <col style={{ width: 150 }} /> {/* Lot / batch */}
               <col style={{ width: 100 }} /> {/* Date */}
               <col style={{ width: 190 }} /> {/* Warehouse */}
-              <col style={{ width: 110 }} /> {/* MO No. */}
+              <col style={{ width: 120 }} /> {/* MO No. */}
               <col style={{ width: 170 }} /> {/* Style */}
               <col style={{ width: 120 }} /> {/* Buyer */}
               <col style={{ width: 110 }} /> {/* Category */}
@@ -216,7 +216,7 @@ const DetailTable = ({
               <col style={{ width: 180 }} /> {/* PMC Remark */}
               <col style={{ width: 160 }} /> {/* Reason */}
               <col style={{ width: 60 }} /> {/* Age */}
-              <col style={{ width: 80 }} /> {/* Qty */}
+              <col style={{ width: 110 }} /> {/* Qty */}
               <col style={{ width: 100 }} /> {/* Value */}
             </colgroup>
             <thead>
@@ -291,8 +291,8 @@ const DetailTable = ({
                       </span>
                     </td>
                     <td className="mono-cell">{line.moNo || "—"}</td>
-                    <td className="nowrap">{line.custStyle || "—"}</td>
-                    <td className="nowrap">{line.customerName}</td>
+                    <td className="mono-cell">{line.custStyle || "—"}</td>
+                    <td className="mono-cell">{line.customerName}</td>
                     <td className="cat-cell2" title={line.categoryEn}>
                       {line.categoryZh}
                     </td>
@@ -334,7 +334,7 @@ const DetailTable = ({
                     </td>
                     <td className="num">
                       {num(line.qty)}{" "}
-                      <span style={{ color: "var(--faint)", fontSize: "10px" }}>
+                      <span style={{ color: "var(--faint)", fontSize: "11px" }}>
                         {line.unit}
                       </span>
                     </td>

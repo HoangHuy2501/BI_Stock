@@ -111,7 +111,6 @@ const OverviewView = () => {
     nameZh: sel.cat,
     name: sel.cust,
     year: sel.year ? Number(sel.year) : undefined,
-    threshold,
   });
 
   const wipQuery = useWipDataset();

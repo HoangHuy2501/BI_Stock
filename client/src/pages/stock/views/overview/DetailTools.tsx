@@ -15,14 +15,11 @@ const DetailTools = ({ search, onSearch, shown, total }: DetailToolsProps) => (
       <input
         type="search"
         value={search}
-        placeholder="Search item, code, lot or buyer"
+        placeholder="Search item, code, lot or buyer ..."
         onChange={(event) => onSearch(event.target.value)}
         aria-label="Search stock lines"
       />
     </div>
-    <span className="count">
-      {num(shown)} of {num(total)} lines
-    </span>
   </>
 );
 

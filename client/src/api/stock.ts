@@ -40,7 +40,6 @@ export interface OverviewQuery {
   year?: number;
   nameZh?: string; // category
   name?: string; // customer
-  threshold?: number;
 }
 
 interface ApiErrorBody {

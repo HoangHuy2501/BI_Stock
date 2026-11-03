@@ -245,7 +245,8 @@ const PivotTable = ({ stores, meta, axis, span, available = true, wh, cat, cust,
               );
             })}
             <tr className="total-row">
-              <td colSpan={3}>Total 合计</td>
+              <td colSpan={1}>Total 合计</td>
+              <td colSpan={2} />
               {totals.map((total, j: number) => (
                 <Fragment key={shownMonths[j]}>
                   <td className="cell">{num(total.qty)}</td>
