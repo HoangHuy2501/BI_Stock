@@ -109,14 +109,14 @@ const StockLayout = () => {
             </nav>
           </div>
           <div className="head-tools">
-            <button
+            {/* <button
               type="button"
               className="viewopts-trigger"
               onClick={() => setPanelOpen((open: boolean) => !open)}
               aria-expanded={panelOpen}
             >
               View options
-            </button>
+            </button> */}
             {panelOpen ? (
               <div className="viewopts" role="dialog" aria-label="View options">
                 <p className="viewopts-title">Aging policy</p>
