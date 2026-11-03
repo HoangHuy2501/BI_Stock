@@ -42,10 +42,11 @@ class StockService {
             throw error
         }
     }
-    async AgedRank(warehouse, threshold, year, nameZh, name, period) {
+    async AgedRank(warehouse, year, nameZh, name, period) {
         try {
 
-            const items = await StockRepository.AgedRank(warehouse, threshold, year, nameZh, name, period);
+            const items = await StockRepository.AgedRank(warehouse, year, nameZh, name, period);
+            const threshold = 90
             return { threshold, items }
         } catch (error) {
             throw error
