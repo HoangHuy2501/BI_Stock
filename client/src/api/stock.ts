@@ -141,6 +141,7 @@ interface DetailRow {
   age_days: number | null;
   end_qty: number | null;
   end_usd: number | null;
+  unit_no: string | null;
 }
 
 const toDetailLine = (row: DetailRow, index: number): StockDetailLine => ({
@@ -156,7 +157,7 @@ const toDetailLine = (row: DetailRow, index: number): StockDetailLine => ({
   warehouseZh: row.warehouse ?? "",
   warehouseEn: "",
   qty: row.end_qty ?? 0,
-  unit: "",
+  unit: row.unit_no ?? "",
   usd: row.end_usd ?? 0,
   ageDays: row.age_days ?? 0,
   batchNo: row.lot_batch ?? "",

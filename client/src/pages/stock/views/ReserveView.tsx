@@ -107,7 +107,7 @@ const ReserveView = () => {
         <Card
           zh="库龄分布"
           en="Age Band Distribution"
-          note={`${usd(dataset.atRiskUsd)} at or past 6 months · oldest ${dataset.oldestMonths} mo`}
+          note={`${usd(dataset.atRiskUsd)} at or past 6 months`}
         >
           <ReserveHistogram dataset={dataset} focus={focus} onPick={pick} />
         </Card>
@@ -125,11 +125,6 @@ const ReserveView = () => {
       <Card
         zh="保留仓明细"
         en="Cross-filtered Register"
-        note={
-          chips.length > 0
-            ? `${num(rows.length)} of ${num(dataset.rows.length)} detail lines match`
-            : `${num(dataset.rows.length)} detail lines · oldest first`
-        }
       >
         <ReserveRegister
           dataset={dataset}

@@ -119,14 +119,6 @@ const ReserveRegister = ({
         </div>
       ) : null}
 
-      <div className="reg-coverage">
-        <span>
-          Item-level lines for <b>{num(dataset.rows.length)}</b> of {num(dataset.lines)} reserve lots ·{' '}
-          {usd(dataset.itemisedUsd)} of {usd(dataset.usd)}
-        </span>
-        <span>signals above cover every lot</span>
-      </div>
-
       <div className={showTable ? 'table-scroll' : 'table-scroll is-hidden'}>
         <table className="detail reserve-register">
           <thead>

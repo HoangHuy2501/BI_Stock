@@ -32,7 +32,6 @@ const ReserveByBuyer = ({ dataset, focus, onPick }: ReserveByBuyerProps) => {
   const signalUsd = band ? band.usd : dataset.atRiskUsd;
   const total = signalUsd || 1;
   const max = rows.reduce((peak: number, row: ReserveBuyer): number => Math.max(peak, row.usd), 1);
-  const scope = band ? band.labelEn : '6+ month';
 
   if (rows.length === 0) {
     return (
@@ -72,10 +71,6 @@ const ReserveByBuyer = ({ dataset, focus, onPick }: ReserveByBuyerProps) => {
           </button>
         );
       })}
-      <div className="rank-foot">
-        <span>{rows.length} buyers holding {scope} stock</span>
-        <span className="num">{usd(signalUsd)} total</span>
-      </div>
     </div>
   );
 };

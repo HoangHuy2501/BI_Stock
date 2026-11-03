@@ -194,7 +194,7 @@ const WipView = () => {
       </Card>
 
       <div className="row-2">
-        <Card zh="在制时长分布" en="Time on Line" note="USD value at cost · by weeks in WIP">
+        <Card zh="在制时长分布" en="Time on Line">
           <WipHistogram
             summary={summary}
             focusWeek={focus.week}

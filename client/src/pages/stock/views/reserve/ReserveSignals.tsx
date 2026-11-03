@@ -34,10 +34,10 @@ const ReserveSignals = ({ dataset, focus, onPick }: ReserveSignalsProps) => {
             style={bandVars(style)}
             onClick={() => onPick('band', index)}
             aria-pressed={on}
-            title={`Filter the register to ${style.label} · ${style.zh}`}
+            title={`Filter the register to ${style.label}`}
           >
             <span className="light-rule">
-              {style.zh} <span style={{ color: 'var(--faint)' }}>{style.label}</span>
+              <span style={{ color: 'var(--faint)' }}>{style.label}</span>
             </span>
             <span className="light-val num">{usd(band.usd)}</span>
             <span className="light-foot">
