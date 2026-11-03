@@ -35,6 +35,14 @@ export interface StockDetailQuery {
   lot?: string;
 }
 
+export interface OverviewQuery {
+  warehouse?: string;
+  year?: number;
+  nameZh?: string; // category
+  name?: string; // customer
+  threshold?: number;
+}
+
 interface ApiErrorBody {
   error?: {
     code?: string;
@@ -133,6 +141,7 @@ interface DetailRow {
   age_days: number | null;
   end_qty: number | null;
   end_usd: number | null;
+  unit_no: string | null;
 }
 
 const toDetailLine = (row: DetailRow, index: number): StockDetailLine => ({
@@ -148,7 +157,7 @@ const toDetailLine = (row: DetailRow, index: number): StockDetailLine => ({
   warehouseZh: row.warehouse ?? "",
   warehouseEn: "",
   qty: row.end_qty ?? 0,
-  unit: "",
+  unit: row.unit_no ?? "",
   usd: row.end_usd ?? 0,
   ageDays: row.age_days ?? 0,
   batchNo: row.lot_batch ?? "",
@@ -193,10 +202,10 @@ const toDetailResponse = (
 };
 
 export const stockApi = {
-  overview: async (): Promise<StockOverviewData> => {
+  overview: async (query: OverviewQuery = {}): Promise<StockOverviewData> => {
     const response = await requestGet<
       StockOverviewData | StockOverviewApiResponse
-    >("/api/stock/overview");
+    >("/api/stock/overview", { ...query });
     if ("success" in response) {
       if (!response.success || !response.data) {
         throw new Error(response.message || "Could not load overview");
@@ -212,11 +221,11 @@ export const stockApi = {
     const raw = await requestGet<unknown>("/api/stock/detail", {
       page,
       pageSize,
-      item: query.item,
-      code: query.code,
-      lot: query.lot,
-      buyer: query.buyer,
+      item: query.item ?? query.code ?? query.lot,
       warehouse: query.warehouse,
+      year: query.year,
+      nameZh: query.category,
+      name: query.buyer,
     });
     return toDetailResponse(raw, page, pageSize);
   },
@@ -237,6 +246,12 @@ export const stockApi = {
       keys ? { keys } : {},
     ),
 
-  updateWipTag: (lotId: string, body: WipTagUpdateRequest): Promise<WipTag> =>
-    requestWrite<WipTag>("PUT", `/api/stock/wip/lots/${lotId}/tag`, body),
+  updateWipTag: (lotId: string, body: WipTagUpdateRequest): Promise<WipTag> => {
+    console.log("📤 Body gửi lên API:", body);
+    return requestWrite<WipTag>(
+      "PUT",
+      `/api/stock/wip/lots/${encodeURIComponent(lotId)}/tag`,
+      body,
+    );
+  },
 };

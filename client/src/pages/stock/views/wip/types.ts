@@ -23,4 +23,12 @@ export interface LotTag {
 
 export type LotTagMap = Record<string, LotTag>;
 
-export type WipTagPatch = Partial<Pick<LotTag, 'cause' | 'blueFlag'>>;
+export interface WipTagPatch {
+  cause?: string | null;
+  blueFlag?: boolean;
+
+  made_lot?: string | null;
+  moNo?: string | null;
+  goodsNo?: string | null;
+  reason?: string | null;
+}

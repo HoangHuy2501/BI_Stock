@@ -133,14 +133,34 @@ class WipServices {
                         ? new Date(item.lot_date).toISOString().slice(0, 10)
                         : '',
 
-                    cause: null,
-                    blueFlag: false,
+                    cause: item.reason_dl,
+                    blueFlag: item.is_mark,
 
-                    moNo: item.mo_no ?? null
+                    moNo: item.mo_no ?? null,
+                    made_lot: item.made_lot ?? null
                 };
             });
 
             return lots;
+        } catch (error) {
+            throw error
+        }
+    }
+
+    // update reason
+    async UpdateReason(data) {
+        try {
+            const result = await WipRepository.UpdateReason(data);
+            return result
+        } catch (error) {
+            throw error
+        }
+    }
+    //upadte mark and reason
+    async UpdateMarkAndReason(data) {
+        try {
+            const result = await WipRepository.UpdateMarkAndReason(data);
+            return result
         } catch (error) {
             throw error
         }

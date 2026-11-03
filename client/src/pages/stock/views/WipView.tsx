@@ -104,7 +104,7 @@ const WipView = () => {
     const previous: LotTag = tags[lotId] ?? EMPTY_TAG;
     const next: LotTag = {
       cause: patch.cause === undefined ? previous.cause : patch.cause,
-      blueFlag: patch.blueFlag === undefined ? previous.blueFlag : patch.blueFlag,
+      blueFlag: patch.blueFlag ?? false,
     };
 
     setTags((current: LotTagMap) => ({ ...current, [lotId]: next }));
@@ -112,7 +112,16 @@ const WipView = () => {
     setTagError(null);
 
     updateTag.mutate(
-      { lotId, cause: next.cause, blueFlag: next.blueFlag },
+      {
+        lotId,
+        cause: next.cause,
+        blueFlag: next.blueFlag,
+        mark: next.blueFlag,
+        made_lot: patch.made_lot,
+        moNo: patch.moNo,
+        goodsNo: patch.goodsNo,
+        reason: patch.reason,
+      },
       {
         onError: (error: unknown) => {
           setTags((current: LotTagMap) => ({ ...current, [lotId]: previous }));

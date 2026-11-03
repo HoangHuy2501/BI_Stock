@@ -192,10 +192,10 @@ export interface StockDetailLine {
   lotDate: string | null;
   reasonWh: string;
   reasonDl: string;
-  moNo: string | null;      
-  custStyle: string | null;  
-  rem: string | null;       
-  pmcRem: string | null;   
+  moNo: string | null;
+  custStyle: string | null;
+  rem: string | null;
+  pmcRem: string | null;
 }
 
 export interface StockDetailResponse {
@@ -220,6 +220,7 @@ export interface WipLotItem {
   cause: string | null;
   blueFlag: boolean;
   moNo: string | null;
+  made_lot: string | null;
 }
 
 export interface WipDataset {
@@ -308,6 +309,11 @@ export interface ReserveDatasetResponse {
 export interface WipTagUpdateRequest {
   cause: string | null;
   blueFlag: boolean;
+  mark: boolean;
+  made_lot?: string | null;
+  moNo?: string | null;
+  goodsNo?: string | null;
+  reason?: string | null;
 }
 
 export interface WipTag {
