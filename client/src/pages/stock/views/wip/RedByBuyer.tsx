@@ -57,10 +57,6 @@ const RedByBuyer = ({ summary, customers, focusCust, onPick }: RedByBuyerProps) 
           <span className="rank-val num">{usd(row.usd)}</span>
         </button>
       ))}
-      <div className="rank-foot">
-        <span>{rows.length} buyers with red lots</span>
-        <span className="num">{usd(summary.redUsd)} total</span>
-      </div>
     </div>
   );
 };
