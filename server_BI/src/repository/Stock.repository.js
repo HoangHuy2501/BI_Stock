@@ -35,7 +35,7 @@ class StockRepository {
 
                         AND (
                             @nameZh IS NULL
-                            OR goods_type_desc LIKE N'%' + @nameZh + N'%'
+                            OR effect_no LIKE N'%' + @nameZh + N'%'
                         )
 
                         AND (
@@ -74,7 +74,7 @@ class StockRepository {
                 .input("name", sql.NVarChar, name || null)
                 .input("period", sql.Int, period || 0)
                 .query(`
-                select CAST(ROW_NUMBER() OVER (ORDER BY goods_type_desc) - 1 AS INT) AS categoryIdx, goods_type_desc as nameZh, 
+                select CAST(ROW_NUMBER() OVER (ORDER BY effect_no) - 1 AS INT) AS categoryIdx, effect_no as nameZh, 
                     round(sum(end_usd),0) as usd
                     from bi_stock 
                     WHERE
@@ -97,7 +97,7 @@ class StockRepository {
 
                         AND (
                             @nameZh IS NULL
-                            OR goods_type_desc LIKE N'%' + @nameZh + N'%'
+                            OR effect_no LIKE N'%' + @nameZh + N'%'
                         )
 
                         AND (
@@ -116,7 +116,7 @@ class StockRepository {
                                 )
                             )
                         )
-                    group by goods_type_desc
+                    group by effect_no
                 `)
             return result.recordset;
         } catch (error) {
@@ -152,7 +152,7 @@ class StockRepository {
 
                             AND (
                                 @nameZh IS NULL
-                                OR goods_type_desc LIKE N'%' + @nameZh + N'%'
+                                OR effect_no LIKE N'%' + @nameZh + N'%'
                             )
 
                             AND (
@@ -214,7 +214,7 @@ class StockRepository {
 
                             AND (
                                 @nameZh IS NULL
-                                OR goods_type_desc LIKE N'%' + @nameZh + N'%'
+                                OR effect_no LIKE N'%' + @nameZh + N'%'
                             )
 
                             AND (
@@ -242,19 +242,19 @@ class StockRepository {
         }
     }
 
-    async AgedRank(warehouse, threshold, year, nameZh, name, period) {
+    async AgedRank(warehouse, year, nameZh, name, period) {
         try {
             const pool = await getPool();
             const result = await pool.request()
                 .input("warehouse", sql.NVarChar, warehouse?.trim() || null)
-                .input("threshold", sql.Int, threshold)
+                .input("threshold", sql.Int, 90)
                 .input("year", sql.Int, year)
                 .input("nameZh", sql.NVarChar, nameZh || null)
                 .input("name", sql.NVarChar, name || null)
                 .input("period", sql.Int, period || 0)
                 .query(`
-                select CAST (ROW_NUMBER() OVER (ORDER BY goods_type_desc) - 1 AS INT) AS categoryIdx,
-                    goods_type_desc as nameZh, 
+                select CAST (ROW_NUMBER() OVER (ORDER BY effect_no) - 1 AS INT) AS categoryIdx,
+                    effect_no as nameZh, 
                     round(sum(end_usd),0) as agedUsd
                     from bi_stock
                     WHERE
@@ -284,7 +284,7 @@ class StockRepository {
 
                         AND (
                             @nameZh IS NULL
-                            OR goods_type_desc LIKE N'%' + @nameZh + N'%'
+                            OR effect_no LIKE N'%' + @nameZh + N'%'
                         )
 
                         AND (
@@ -303,7 +303,7 @@ class StockRepository {
                                 )
                             )
                         )
-                    group by goods_type_desc
+                    group by effect_no
                     order by agedUsd desc
                 `)
             return result.recordset;
@@ -332,7 +332,7 @@ class StockRepository {
                         WHEN st_no IN ('106', '306') THEN N'半成品仓 - sFG WH'
                         ELSE st_name
                     END AS warehouseName,
-                    goods_type_desc as categoryName,
+                    effect_no as categoryName,
                     ISNULL(cust_name, '-') AS customerName,
                     FORMAT(made_lot_date, 'yyyy-MM') AS 'month',
                     SUM(end_qty) AS qty,
@@ -358,7 +358,7 @@ class StockRepository {
 
                     AND (
                         @nameZh IS NULL
-                        OR goods_type_desc LIKE N'%' + @nameZh + N'%'
+                        OR effect_no LIKE N'%' + @nameZh + N'%'
                     )
 
                     AND (
@@ -383,13 +383,13 @@ class StockRepository {
                         WHEN st_no IN ('106', '306') THEN N'半成品仓 - sFG WH'
                         ELSE st_name
                     END,
-                    goods_type_desc,
+                    effect_no,
                     ISNULL(cust_name, '-'),
                     FORMAT(made_lot_date, 'yyyy-MM')
                 ORDER BY
                     'month' DESC,
                     warehouseName,
-                    goods_type_desc,
+                    effect_no,
                     customerName;
                 `)
             return result.recordset;
@@ -459,7 +459,7 @@ class StockRepository {
 
             AND (
                 @nameZh IS NULL
-                OR goods_type_desc LIKE N'%' + @nameZh + N'%'
+                OR effect_no LIKE N'%' + @nameZh + N'%'
             )
 
             AND (
